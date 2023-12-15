@@ -14,8 +14,6 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /opt
 COPY . /opt/ewm_backend
 RUN ls .
-ENV http_proxy http://child-prc.intel.com:913
-ENV https_proxy http://child-prc.intel.com:913
 # Install any needed packages specified in requirements.txt
 
 RUN python -m venv venv

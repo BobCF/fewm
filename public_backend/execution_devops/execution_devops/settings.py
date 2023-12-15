@@ -65,9 +65,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 # CORS跨域请求白名单设置
 CORS_ORIGIN_WHITELIST = (
     'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://10.238.2.206:8000',
-    'http://10.238.6.77:8000',
+    'http://localhost:8000'
 
 )
 CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
@@ -106,26 +104,9 @@ ALLOWED_HOSTS = ['127.0.0.1','fewm.intel.com','localhost','firmware-rest-engine.
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
-        'HOST': 'maria3147-lb-pg-in.dbaas.intel.com',  # 数据库主机
-        'PORT': 3306,  # 数据库端口
-        'USER': 'ExecutionDevOpsDB_so',  # 数据库用户名
-        'PASSWORD': 'gGzD3G2M3Sh5fP5',  # 数据库用户密码
-        'NAME': 'ExecutionDevOpsDB'  # 数据库名字
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         # 'NAME': BASE_DIR / 'db.sqlite3',
-#         'HOST': '127.0.0.1',  # 数据库主机
-#         'PORT': 3306,  # 数据库端口
-#         'USER': 'root',  # 数据库用户名
-#         'PASSWORD': 'mysql',  # 数据库用户密码
-#         'NAME': 'ExecutionDevOpsDB'  # 数据库名字
-#     }
-# }
 
 AUTH_USER_MODEL = 'evm_bff.Usersrigra'
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.AllowAllUsersModelBackend']
