@@ -1,0 +1,30 @@
+[
+    {
+        "idsid":"wushua3x",
+        "email":"shuangx.wu@intel.com",
+        "password":"20wB1Cm1f1sV007",
+        "firstname": "Shuang",
+        "lastname":"Wu"
+    },
+    {
+        "idsid":"zdingx",
+        "email":"zhiyongx.ding@intel.com",
+        "password":"20wB1Cm1f1sV007",
+        "firstname": "Zhiyong",
+        "lastname":"Ding"
+    },
+    {
+        "idsid":"bfeng1",
+        "email":"bob.c.feng@intel.com",
+        "password":"20wB1Cm1f1sV007",
+        "firstname": "Bob",
+        "lastname":"Feng"
+    },
+    {
+        "idsid":"xingyang",
+        "email":"xing.yang@intel.com",
+        "password":"20wB1Cm1f1sV007",
+        "firstname": "Xing",
+        "lastname":"Yang"
+    }
+]

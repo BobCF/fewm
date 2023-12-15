@@ -1,0 +1,606 @@
+import http
+import os
+import django
+from django.core.paginator import Paginator, EmptyPage
+from django.db.models import Max
+
+from evm_bff.api.camunda_v2 import CamundaApi
+
+# 设置 DJANGO_SETTINGS_MODULE 环境变量（引入settings文件）
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
+# 加载 Django 项目配置
+django.setup()
+from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow
+from evm_bff.api.ewm_workflow import EwmWorkFlow
+from rest_framework import serializers
+from rest_framework import serializers
+import pandas as pd
+import json
+import datetime as dt
+
+# Create your models here.
+
+class TestCycle():
+    def __init__(self):
+        self.workflow = EwmWorkFlow()
+
+    def build_statics_data(self, group_statics_list):
+        """
+        return:
+        {
+            "id":group_id,
+            "title":group_title,
+            "startTime":group.'startTime',
+            "total":task_total_num,
+            "wip":task_wip_num,
+            "notrun":task_notrun_num,
+            "complete":task_finished_num,
+            "pass": task_pass_num,
+            "fail": task_fail_num,
+            "block": task_block_num
+        }
+
+        """
+        result = []
+        for group_data in group_statics_list:
+            try:
+                tg = TaskGroup.objects.get(group_id=group_data['id'])
+            except Exception as e:
+                print(e)
+                continue
+            else:
+                total = tg.size
+            plan_num = group_data['plan']
+            wip_num = group_data['wip']
+            notrun_num = group_data['notrun']
+            if plan_num:
+                finished_num = 0
+                wip_num=0
+                notrun_num = total
+            else:
+                finished_num = total - wip_num - notrun_num
+            result.append(
+                {
+                    "id":group_data['id'],
+                    "title":tg.title,
+                    "startTime":group_data['startTime'],
+                    "total":total,
+                    "wip":wip_num,
+                    "notrun":notrun_num,
+                    "complete":finished_num
+                }
+            )
+        return result
+
+    def get_all_statics(self, assignee, password, index = 0,pagesize=5):
+        group_statics = self.workflow.getGroupStatusAll(assignee, password,index,pagesize)
+        return self.build_statics_data(group_statics)
+
+    def get_assignee_statics(self, assignee, password,index=0,pagesize=5):
+        group_statics = self.workflow.getGroupStatusByAssignee(assignee, password,index,pagesize)
+        return self.build_statics_data(group_statics)
+
+    def build_group_data(self,active_group_list, index, pagesize):
+        group_ids = [inst['businessKey'] for inst in active_group_list]
+        # paginator=Paginator(testcycle_ids,page_size)
+        # testcycle_idss = paginator.page(page_num)
+        page_group=group_ids[0:len(group_ids):int(pagesize)]
+        total_page = len(group_ids)//int(pagesize)+1
+        result=[]
+        for group_id in page_group:
+            try:
+                tg=TaskGroup.objects.get(group_id=group_id)
+            except Exception as e:
+                print(e)
+                break
+            else:
+                completesize=Task.objects.filter(group_id=group_ids,status='complete').count()
+                runningsize=Task.objects.filter(group_id=group_ids,status='running').count()
+                opensize=Task.objects.filter(group_id=group_ids,status='open').count()
+                result.append({
+                    'id':tg.group_id,
+                    "title": tg.title,
+                    "eta": tg.eta,
+                    "team": tg.team,
+                    "size": tg.size,
+                    "status": tg.status,
+                    "start_time":tg.start_time,
+                    "configuration":tg.configuration ,
+                    "owner":tg.assignee,
+                    'executionsize': {
+                        'complete': completesize,
+                        'running': 2,
+                        'open': opensize
+                    },
+                    'executiondata': {
+                        'data': [600, 500, 400, 300, 200, 100, 0],
+                        'date': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    }
+
+                })
+        dict={
+            'result':result,
+            'total':total_page
+        }
+        return dict
+
+    def get_assignee_group(self, assignee, password, index=0,pagesize=3):
+
+        processInsts = self.workflow.getActiveGroup(assignee, password,index=0, pagesize=9999)
+        print(processInsts)
+        groups = self.build_group_data(processInsts,index,pagesize)
+
+        return groups
+        
+    def get_all(self, assignee, password, index=0,pagesize=3):
+
+        processInsts = self.workflow.getActiveGroup(assignee, password,index=0, pagesize=9999,byAssignee=False)
+        groups = self.build_group_data(processInsts,index,pagesize)
+
+        return groups
+
+    def updateTaskStatus(self,assignee, password, group_id):
+        active_tasks = self.workflow.getActiveTaskListByGroupId(assignee, password, group_id,1, 9999)
+
+        # update task table
+        for task in active_tasks:
+            """ update task set assignee={assignee}, status={task_name} where group_id={group_id} and task_id={task_id}""".format(assignee=task['assignee'], task_name=task['name'],group_id=group_id, task_id=task['variables']['TestCase']['value'])
+
+            assigntask = Task.objects.get(group_id=group_id, task_id=task['variables']['TestCase']['value'])
+            assigntask.owner = task['assignee']
+            assigntask.status = task['name']
+            assigntask.save()
+
+
+    def start_cycle(self,assignee, password, group_id):
+
+        group_inst_id = self.workflow.start_taskgroup(assignee, password,group_id)
+        tasks = Task.objects.filter(group_id=group_id)
+        taskidlist = [task.task_id for task in tasks]
+        self.workflow.completePlanTask(assignee, password,group_id, taskidlist)
+        self.updateTaskStatus(assignee,password,group_id)
+
+        taskgroup = TaskGroup.objects.get(group_id=group_id)
+        taskgroup.group_inst_id=group_inst_id
+        taskgroup.save()
+
+        return group_inst_id
+
+    def roundrobin_assignment(self,group_id, team):
+        assignment = {}
+        tasks = Task.objects.filter(group_id = group_id, status="Assignment")
+        i = 0
+        teamsize = len(team)
+        for task in tasks:
+            assignment[task.task_id] = team[i%teamsize]
+            i+=1
+
+        return assignment
+
+    def CompleteAssign(self,assigner, password, group_id, team ):
+        
+        assignment = self.roundrobin_assignment(group_id, team)
+        print(assignment)
+        active_tasks = self.workflow.getActiveTaskListByGroupId(assigner, password, group_id)
+        task_inst_id_map = {
+            task['variables']['TestCase']['value']: task for task in active_tasks
+        }
+
+        for task_id, assignee in assignment.items():
+            task_inst = task_inst_id_map.get(task_id)
+            if task_inst:
+                self.workflow.completeAssignTask(assigner,password,task_inst['id'],assignee)
+
+        active_tasks = self.workflow.getActiveTaskListByGroupId(assigner, password, group_id)
+        task_inst_id_map = {
+            task['variables']['TestCase']['value']: task for task in active_tasks
+        }
+        for task_id, assignee in assignment.items():
+            task_inst = task_inst_id_map.get(task_id)
+            if task_inst:
+                task_execution_id = task_inst['executionId']
+                if "CaseStep" in task_inst['variables']:
+                    task_step_id = task_inst['variables']['CaseStep']['value']
+                else:
+                    task_step_id = "0"
+                task_assignee = task_inst['assignee']
+                task_inst_id = task_inst['id']
+                print("flow insert item")
+                print(task_id)
+                print(group_id)
+                flowitem = Flow(
+                    group_id = group_id,
+                    dsc_id = 0,
+                    task_id = task_id,
+                    step_id = task_step_id,
+                    result = "",
+                    assignee= task_assignee,
+                    start_time= None,
+                    end_time=None,
+                    pause_time=None,
+                    create_at= dt.datetime.utcnow().isoformat(timespec='seconds'),
+                    task_inst_id=task_inst_id,
+                    comments="",
+                    execution_id=task_execution_id
+                )
+                flowitem.save()
+
+            assigntask = Task.objects.get(group_id=group_id, task_id=task_id)
+            assigntask.owner = assignee
+            assigntask.status = "ReadExecutionSteps"
+            assigntask.save()
+
+    def kill_cycle(self,assignee, password, group_id, reason, skipCustomListeners=True, skipSubprocesses=True):
+        return self.camunda.killInstance(assignee,password,group_id, reason)
+
+
+    def updateCompleteFlowItem(self, assignee, password, task_inst_id, comment=None):
+        start_time, end_time = self.workflow.getTaskStepDuration(assignee, password, execution_id)
+        # update flow table
+        # 1. update comments
+        # 2. update completed task's start, end time
+
+        flowitem = Flow.objects.get(task_inst_id=task_inst_id)
+        flowitem.start_time = start_time
+        flowitem.end_time = end_time
+        flowitem.save()
+
+        
+
+class TestCycleStaticsSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    title = serializers.CharField()
+    startTime=serializers.DateTimeField()
+    total = serializers.IntegerField()
+    wip = serializers.IntegerField()
+    notrun = serializers.IntegerField()
+    complete=serializers.IntegerField()
+class TestCycleSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    title = serializers.CharField()
+    eta = serializers.CharField()
+    team=serializers.CharField()
+    size=serializers.IntegerField()
+    status=serializers.CharField()
+    configuration=serializers.CharField()
+    owner=serializers.CharField()
+    start_time=serializers.DateTimeField()
+    executionsize = serializers.DictField()
+    executiondata = serializers.DictField()
+
+class TestCycleDetailsSerializer(serializers.Serializer):
+    case_total = serializers.IntegerField()
+    case_pass = serializers.IntegerField()
+    case_fail = serializers.IntegerField()
+    case_wip = serializers.IntegerField()
+    case_notrun = serializers.IntegerField()
+    case_block = serializers.IntegerField()
+    configuration = serializers.CharField()
+
+class TestStepSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    expect_result = serializers.CharField()
+
+class TestCase():
+    def __init__(self):
+        self.workflow = EwmWorkFlow()
+
+    def get_not_run(self,assignee,password,group_id,index,pagesize):
+        return self.get_active_task_list(assignee, group_id, "ReadExecutionSteps", index, pagesize)
+
+
+    def get_wip(self,assignee,password, group_id,index,pagesize):
+        execution_tasks = self.get_active_task_list(assignee, group_id, "Execution", index, pagesize)
+        confirmresult_tasks = self.get_active_task_list(assignee, group_id, "ConfirmResult", index, pagesize)
+        total=(len(execution_tasks['result'])+len(confirmresult_tasks['result']))//pagesize+1
+        return {
+            "result": execution_tasks['result'] + confirmresult_tasks['result'],
+            "total": total
+        }
+
+    def get_complete(self,assignee,password, group_id, index, pagesize):
+        return self.get_active_task_list(assignee, group_id, "Complete", index, pagesize)
+
+    def get_assignement(self, assignee, password,group_id,index,pagesize):
+        return self.get_active_task_list(assignee, group_id, "Assignment", index, pagesize)
+
+    def get_active_task_list(self,assignee, group_id,task_name, page_num ,page_size ):
+        tg=TaskGroup.objects.get(group_id=group_id)
+        tas=Task.objects.filter(group_id=group_id, owner = assignee, status = task_name)
+        print(tas)
+
+        paginator=Paginator(tas,page_size)
+        total_page = paginator.num_pages
+        if total_page <= page_num:
+            page_num=total_page-1
+        tass=paginator.page(page_num+1)
+        result=[]
+        for ta in tass:
+            result.append({
+                'id':ta.task_id,
+                'title':ta.task_title,
+                'configuration':ta.configuration,
+                'status':ta.status,
+                'owner':ta.owner,
+                'owner_team':tg.team,
+                'tcd_id':ta.dsc_id
+            })
+        dict={
+            'result':result,
+            'total':total_page
+        }
+
+        return dict
+
+    def get_all(self, assignee, password, group_id,index = 0, pagesize = 10):
+        return {
+            "Assignment": self.get_assignement(assignee, password, group_id, index, pagesize),
+            "NotRun":self.get_not_run(assignee,password, group_id,index, pagesize),
+            "WIP": self.get_wip(assignee, password, group_id, index, pagesize),
+            "Complete": self.get_complete(assignee, password, group_id,index,pagesize)
+        }
+
+    def updateTaskStatus(self,assignee, password, group_id,task_id):
+        active_tasks = self.workflow.getActiveTaskListByGroupId(assignee, password, group_id,1, 9999)
+        for task in active_tasks:
+            if task['variables']['TestCase']['value'] == task_id:
+                task_execution_id = task['executionId']
+                if "CaseStep" in task['variables']:
+                    task_step_id = task['variables']['CaseStep']['value']
+                else:
+                    if task['name'] == "ConfirmResult":
+                        task_step_id = "999"
+                    else:
+                        task_step_id = "0"
+                task_assignee = task['assignee']
+                task_inst_id = task['id']
+
+                flowitem = Flow(
+                    group_id = group_id,
+                    dsc_id = 0,
+                    task_id = task_id,
+                    step_id = task_step_id,
+                    result = "",
+                    assignee= task_assignee,
+                    start_time= None,
+                    end_time=None,
+                    pause_time=None,
+                    create_at= dt.datetime.utcnow().isoformat(timespec='seconds'),
+                    task_inst_id=task_inst_id,
+                    comments="",
+                    execution_id=task_execution_id
+                )
+                flowitem.save()
+                break
+        # update task table
+        for task in active_tasks:
+            """ update task set assignee={assignee}, status={task_name} where group_id={group_id} and task_id={task_id}""".format(assignee=task['assignee'], task_name=task['name'],group_id=group_id, task_id=task['variables']['TestCase']['value'])
+
+            assigntask = Task.objects.get(group_id=group_id, task_id=task['variables']['TestCase']['value'])
+            assigntask.owner = task['assignee']
+            assigntask.status = task['name']
+            assigntask.save()
+
+
+    def updateCompleteFlowItem(self, assignee, password, task_inst_id, result="complete", comment=None):
+        start_time, end_time = self.workflow.getTaskStepDuration(assignee, password, task_inst_id)
+        # update flow table
+        # 1. update comments
+        # 2. update completed task's start, end time
+
+        print(task_inst_id)
+
+        flowitem = Flow.objects.get(task_inst_id=task_inst_id)
+        flowitem.start_time = start_time
+        flowitem.end_time = end_time
+        flowitem.result = result
+        flowitem.save()
+
+    def createFlowItem(self, assignee, password, group_id, task_id):
+        pass
+
+    def CompleteReadExecutionStep(self, assignee, password, group_id, task_id):
+
+        tasksteplist = self.getTestStepsArray(task_id)
+        completed_task = self.workflow.completeReadExecutionSteps(assignee,password,group_id,task_id,tasksteplist)
+        if completed_task:
+            self.updateCompleteFlowItem(assignee, password, completed_task['id']) #,completed_task['variables']['result']['value'])
+            self.createFlowItem(assignee, password, group_id, task_id)
+            
+            self.updateTaskStatus(assignee,password,group_id,task_id)
+
+    def CompleteExecution(self,assignee, password,group_id,task_id, result):
+
+        if result == "pass":
+            completed_task = self.workflow.stepPass(assignee, password,group_id,task_id)
+        elif result == "fail":
+            completed_task = self.workflow.stepFail(assignee, password,group_id,task_id)
+            ignored_tasks = self.workflow.ignoreLeftTasks(assignee, password, group_id, task_id)
+        elif result == "block":
+            completed_task = self.workflow.stepBlock(assignee, password,group_id,task_id)
+            ignored_tasks = self.workflow.ignoreLeftTasks(assignee, password, group_id, task_id)
+        elif result == "ignore":
+            completed_task = self.workflow.stepIgnore(assignee, password,group_id,task_id)
+
+        if completed_task:
+            self.updateCompleteFlowItem(assignee, password, completed_task['id'],result) #,completed_task['variables']['result']['value'])
+            self.createFlowItem(assignee, password, group_id, task_id)
+
+            self.updateTaskStatus(assignee,password,group_id,task_id)
+        
+
+    def Complete(self,assignee, password, group_id, task_id, restart=False):
+
+        completed_task = self.workflow.completeConfirmResult(assignee, password, group_id, task_id,restart)
+
+        if completed_task:
+            self.updateCompleteFlowItem(assignee, password, completed_task['id']) #,completed_task['variables']['result']['value'])
+            self.createFlowItem(assignee, password, group_id, task_id)
+
+            self.updateTaskStatus(assignee,password,group_id,task_id)
+
+
+    def getTestStepsArray(self,testcase_id):
+        ta=Task.objects.get(task_id=testcase_id)
+        tcd_id=ta.dsc_id
+        tds=TaskDsc.objects.filter(dsc_id=tcd_id)
+        test_steps=[]
+        for td in tds:
+            test_steps.append({
+                'action':td.action,
+                'id':td.step_id,
+                'expected_results':td.expection,
+                'notes':td.notes,
+                'update_by':ta.owner,
+                'update_date':ta.end_time,
+                'result':ta.result
+            })
+
+        return test_steps
+
+
+    def stage(self,cycle_title,testcase_id):
+        tasks = self.camunda.getActiveTasks("demo","demo",cycle_title)
+        stage = ""
+        for task in tasks:
+            testid = task['variables'].get("TestCase",{}).get('value','')
+            if testid == testcase_id:
+                stage = task['name']
+                if stage == "Execution":
+                    stepid = task['variables'].get("CaseStep",{}).get('value','')
+                    stage = "_".join((stage,stepid))
+                break
+
+        return stage
+
+class TestCaseSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    title = serializers.CharField()
+    configuration = serializers.CharField()
+    status = serializers.CharField()
+    owner = serializers.CharField()
+    owner_team = serializers.CharField()
+    tcd_id = serializers.IntegerField()
+
+class TestResultSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    status = serializers.CharField()
+    reason = serializers.CharField()
+    tag = serializers.CharField()
+    actual_start = serializers.DateTimeField()
+    complete = serializers.IntegerField()
+    pause_start = serializers.DateTimeField()
+    start_date = serializers.DateTimeField()
+    total_pause_time = serializers.IntegerField()
+    submitter = serializers.CharField()
+    submitted_date = serializers.DateTimeField()
+
+
+
+class TestStepSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    action = serializers.CharField()
+    expected_results = serializers.CharField()
+    notes = serializers.CharField()
+    active = serializers.BooleanField()
+class TestStep():
+    def __init__(self):
+        # self.hsdes = HsdEsApi()
+        self.camunda = CamundaApi()
+    def get_all(self,cycle_title, test_case_id,page_size,page_num):
+        # status_code, testcase = self.hsdes.getArticle(test_case_id)
+        # tcd_id = testcase['data'][0]['parent_id']
+        ta=Task.objects.get(task_id=test_case_id)
+        tcd_id=ta.dsc_id
+        # current_step = self.current_step(cycle_title,test_case_id)
+        current_step = Flow.objects.filter(task_id=test_case_id).aggregate(Max('step_id'))['step_id__max']
+        print(current_step)
+        # status_code, tcd = self.hsdes.getArticle(tcd_id)
+        # test_steps = json.loads(tcd['data'][0]['test_case_definition.test_steps'])
+        # print(test_steps)
+        # for index, step in enumerate(test_steps):
+        #     if str(index) == current_step:
+        #         step['active'] = True
+        #     else:
+        #         step['active'] = False
+        #     step['id'] = index
+        tds = TaskDsc.objects.filter(dsc_id=tcd_id)
+        paginator = Paginator(tds, page_size)
+        # 获取每页商品数据
+
+        page_tds = paginator.page(page_num+1)
+
+        # 获取列表页总页数
+        total_page = paginator.num_pages
+        test_steps = []
+
+        for td in page_tds:
+            if str(td.step_id) == current_step:
+                test_steps.append({
+                    'action': td.action,
+                    'id': td.step_id,
+                    'expected_results': td.expection,
+                    'notes': td.notes,
+                    'update_by': ta.owner,
+                    'update_date': ta.end_time,
+                    'result': ta.result,
+                    'active':True
+                })
+            else:
+                test_steps.append({
+                    'action': td.action,
+                    'id': td.step_id,
+                    'expected_results': td.expection,
+                    'notes': td.notes,
+                    'update_by': ta.owner,
+                    'update_date': ta.end_time,
+                    'result': ta.result,
+                    'active': False
+                })
+            dict={
+                'test_steps':test_steps,
+                'total':total_page
+            }
+        return dict
+
+    def current_step(self,cycle_title,testcase_id):
+        tasks = self.camunda.getActiveTasks("demo","demo",cycle_title)
+        print(tasks)
+        step = -1
+        for task in tasks:
+            testid = task['variables'].get("TestCase",{}).get('value','')
+            if testid == testcase_id:
+                stage = task['name']
+                if stage == "Execution":
+                    stepid = task['variables'].get("CaseStep",{}).get('value','')
+                    step = stepid
+                break
+
+        return step
+
+
+    def complete(self,cycle_title, testcase_id, step_id):
+        tasks = self.camunda.getActiveTasks("demo","demo",cycle_title)
+        execution_tasks = [task  for task in tasks if task['name'] == "Execution"]
+        for task in execution_tasks:
+            caseid = task['variables'].get("TestCase",{}).get('value','')
+            stepid = task['variables'].get("CaseStep",{}).get('value','')
+            if caseid == testcase_id and str(step_id) == stepid:
+                self.camunda.completeTask(task['id'],{},"demo","demo")
+                break
+        else:
+            print("no test step matches!!!", cycle_title,testcase_id,step_id)
+
+        return task['id']
+
+if __name__ == "__main__":
+    t_c = TestStep()
+    # print(t_c.get_all(15014046553,15013503671,5,1))
+    # t_c = TestStep()
+    # print(t_c.get_all())
+    # print(t_c.get_details('bios.meteorlake.QS.Client-BIOS.M_BIOS_FV_v340300-corp_23ww40_5'))
+
+    # ts = TestStep()
+    # ts.get_all(16016296036)
