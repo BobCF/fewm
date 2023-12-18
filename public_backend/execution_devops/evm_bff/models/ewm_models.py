@@ -10,7 +10,7 @@ from evm_bff.api.camunda_v2 import CamundaApi
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
 # 加载 Django 项目配置
 django.setup()
-from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow
+from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow, Usersrigra
 from evm_bff.api.ewm_workflow import EwmWorkFlow
 from rest_framework import serializers
 from rest_framework import serializers
@@ -497,6 +497,24 @@ class TestResultSerializer(serializers.Serializer):
     submitter = serializers.CharField()
     submitted_date = serializers.DateTimeField()
 
+
+class UserManagement():
+    def __init__(self):
+        self.camunda = CamundaApi()
+
+    def importUser(self, assignee, password, user_set):
+        for user_info in user_set:
+            status_code = self.camunda.addUser(assignee, password, user_info)
+            user = Usersrigra()
+            user.username = user_info['idsid']
+            user.password = user_info['password']
+            user.first_name = user_info['firstname']
+            user.last_name = user_info['lastname']
+            user.email = user_info['email']
+            user.role = user_info['role']
+            user.save()
+
+        return 0
 
 
 class TestStepSerializer(serializers.Serializer):

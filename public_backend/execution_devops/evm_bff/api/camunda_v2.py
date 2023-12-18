@@ -267,6 +267,26 @@ class CamundaApi():
 
         return None
 
+    def addUser(self,assignee, password, user_info):
+        endpoint = "user/create"
+        method = "POST"
+        payload = {
+            "profile": {
+                "id": user_info['idsid'],
+                "firstName": user_info['firstname'],
+                "lastName": user_info['lastname'],
+                "email":user_info["email"]
+            },
+            "credentials": {
+                "password": user_info['password']
+            }
+        }
+
+        compile_url = urljoin(Config['base_url'], endpoint)
+
+        status_code, data = call_api(compile_url, assignee, password, method = method, data = payload)
+        return status_code
+
 if __name__ == "__main__":
     camunda = CamundaApi()
     instances = camunda.getProcessInsts("demo","demo")

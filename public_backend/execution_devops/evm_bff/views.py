@@ -12,6 +12,7 @@ from rest_framework.pagination import PageNumberPagination
 from evm_bff.models.db_serializers import TaskGroupSerializerupload, FlowSerializer, TaskDscSerializer, TaskSerializer
 from evm_bff.models.ewm_models import TestCaseSerializer, TestCycleSerializer, TestResultSerializer, TestCycleStaticsSerializer,TestStepSerializer
 from evm_bff.models.ewm_models import TestCycle, TestCase, TestStep
+from evm_bff.models.ewm_models import UserManagement
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -323,7 +324,16 @@ class UploaddbView(APIView):
 
         return Response({'code':200,'errmsg':'数据已保存'})
 
+class Users(APIView):
+    def post(self,request):
+        assignee = request.data.get("assignee")
+        password = request.data.get("token")
+        user_set = request.data.get("userset")
 
+        userM = UserManagement()
+        userM.importUser(assignee, password,user_set)
+
+        return Response({'code':200,'errmsg':"User info saved"})
 
 
 class TestCaseResult(APIView):

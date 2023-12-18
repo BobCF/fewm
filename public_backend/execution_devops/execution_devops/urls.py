@@ -22,6 +22,7 @@ from evm_bff.views import StaticTestCycle
 from evm_bff.views import ActiveTestCycle, ActiveTestCycleDetails, ActiveTestCycleStart, ActiveTestCycleStop, ActiveTestCaseStage
 from evm_bff.views import ActiveTestExecution
 from evm_bff.views import TestCaseResult
+from evm_bff.views import Users
 
 from evm_bff.views import Loginview
 
@@ -42,5 +43,6 @@ urlpatterns = [
     re_path('active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/restart/$',ActiveTestCaseReStart.as_view(), name='active-testcase-list'),
     re_path('active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/execution/$',ActiveTestExecution.as_view(), name='active-teststep-action'),
     re_path('userlogin/&',Loginview.as_view, name='login'),
+    re_path('users/$',Users.as_view(), name='user'),
     re_path('testcase-result/',TestCaseResult.as_view(), name='testcase-result-sync'),
 ]
