@@ -329,33 +329,19 @@ class UploaddbView(APIView):
 class TestCaseResult(APIView):
     """ Get Test Case Result, inside sync dag pull data from here"""
     def get(self, request):
-        interval = datetime.now() - timedelta(hours=1000)
+        interval = datetime.now() - timedelta(hours=24*7)
         flows = Flow.objects.raw("""
-            SELECT id,group_id,task_id,assignee,GROUP_CONCAT(result) as step_results 
+            SELECT id,group_id,task_id,assignee, 
+                GROUP_CONCAT(result) as step_results, 
+                MAX(step_id) as max_step_id 
             from evm_bff_flow 
             where task_id in 
                 (SELECT distinct task_id from evm_bff_flow where create_at > '{}' ) 
             GROUP BY task_id;""".format(interval))
         for flow in flows:
+            flow.test_case_result = 'running'
             if 'fail' in flow.step_results:
                 flow.test_case_result = 'fail'
-            elif 'WIP' in flow.step_results:
-                flow.test_case_result = 'WIP'
-            else:
-                flow.test_case_result = 'success'    
-            # print(flow.test_case_result)
+            elif '99' in str(flow.max_step_id):
+                flow.test_case_result = 'complete'
         return Response({'code':0,'errmsg':'','data': [i.to_json() for i in flows]}, headers=resp_headers)
-
-class Planexecution(APIView):
-    def get(self, request):
-        tc=TestCycle()
-        tc.get_all_statics()
-        return Response()
-
-
-
-
-
-
-
-

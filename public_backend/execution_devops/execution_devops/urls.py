@@ -42,5 +42,5 @@ urlpatterns = [
     re_path('active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/restart/$',ActiveTestCaseReStart.as_view(), name='active-testcase-list'),
     re_path('active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/execution/$',ActiveTestExecution.as_view(), name='active-teststep-action'),
     re_path('userlogin/&',Loginview.as_view, name='login'),
-    re_path('testcase-result/',TestCaseResult.as_view, name='testcase-result-sync'),
+    re_path('testcase-result/',TestCaseResult.as_view(), name='testcase-result-sync'),
 ]
