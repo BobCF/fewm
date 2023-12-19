@@ -4,7 +4,8 @@ from urllib.parse import urlencode, urljoin, quote
 ## Camunda Configuration
 Config = {
     #"base_url": "https://camunda.k8s-bios.intel.com/engine-rest/",
-    "base_url": "http://localhost:8080/engine-rest/",
+    #"base_url": "http://localhost:8080/engine-rest/",
+    "base_url": "http://172.17.0.2:8080/engine-rest/",
     "process_key": "FivValidation"
 }
 
