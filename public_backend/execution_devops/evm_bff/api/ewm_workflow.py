@@ -1,4 +1,8 @@
+import datetime
+
 from evm_bff.api.camunda_v2 import CamundaApi
+from evm_bff.models import Task
+
 
 class EwmWorkFlow():
     def __init__(self):
@@ -394,11 +398,22 @@ class uiapi():
     def __init__(self):
         self.db = DBApi()
         self.ewm = EwmWorkFlow()
+        today = datetime.date.today()
+        self.now = datetime.datetime.now()
+        self.todayzero_time = datetime.datetime(today.year, today.month, today.day)
+        self.this_month_startdaytime = datetime.datetime(today.year, today.month, 1)
+        delta = datetime.timedelta(days=1)
+        self.yestdaytime = self.todayzero_time - delta
 
     # Home page
-    def getCompleteAccumulationByUser(self, assignee, duration):
+    def getCompleteAccumulationByUser(self, assignee):
         "select count(*) from Tasktable where assignee = $assignee and start_time>$start and end_time<$end"
 
+        yestdayComplete=Task.objects.filter(owner=assignee, start_time__gte=self.yestdaytime, end_time__lte=
+        self.todayzero_time,status="Completed").count()
+        monthComplete=Task.objects.filter(owner=assignee, start_time__gte=self.this_month_startdaytime, end_time__lte=
+        self.now,status="Completed").count()
+        return yestdayComplete, monthComplete
     def getNewAssignment(self,taskgroupid, assignee,start):
         """
         1. call camunda api historic_task with parameter
@@ -408,12 +423,22 @@ class uiapi():
         2. cache the newassignment into db
         3. get number from db in next time call
         """
-    def getUnAssigned(self, taskgroupid):
+
+        todayNewAssignment=Task.objects.filter(group_id=taskgroupid, owner=assignee,
+                        start_time__gte=self.todayzero_time).count()
+        return todayNewAssignment
+
+    def getUnAssigned(self, taskgroupid,assignee):
         """
         1. call camunda api task with parameter
             1) taskname = "Assignment"
             2) businessKey
         """
+        assigneedto_me=Task.objects.filter(group_id=taskgroupid, owner=assignee).count()
+        unassignee=Task.objects.filter(group_id=taskgroupid,status='Assignment').count()
+        completed=Task.objects.filter(group_id=taskgroupid,status='Complete',owner=assignee).count()
+        return assigneedto_me, unassignee,completed
+
 
     # Execution
     def getActiveTaskGroup(self):

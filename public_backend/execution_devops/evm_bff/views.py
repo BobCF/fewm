@@ -9,6 +9,7 @@ from django.views import View
 # from rest_framework.generics import   APIView
 from rest_framework.pagination import PageNumberPagination
 
+from evm_bff.api.ewm_workflow import uiapi
 from evm_bff.models.db_serializers import TaskGroupSerializerupload, FlowSerializer, TaskDscSerializer, TaskSerializer
 from evm_bff.models.ewm_models import TestCaseSerializer, TestCycleSerializer, TestResultSerializer, TestCycleStaticsSerializer,TestStepSerializer
 from evm_bff.models.ewm_models import TestCycle, TestCase, TestStep
@@ -49,8 +50,9 @@ class ActiveTestCycle(APIView):
         page_size = request.data.get('page_size')
         assignee = request.data.get("assignee")
         password = request.data.get("token")
+        status=request.data.get("status")
         tc = TestCycle()
-        tcs = tc.get_assignee_group(assignee, password, page_num if page_num else 0,page_size if page_size else 3)
+        tcs = tc.get_assignee_group(assignee, password,status, page_num if page_num else 0,page_size if page_size else 3)
         active_testcycles = tcs['result']
         print(active_testcycles)
         serializer = TestCycleSerializer(instance=active_testcycles,many=True)
@@ -61,7 +63,7 @@ class ActiveTestCycle(APIView):
         return Response(active_testcycle, headers=resp_headers)
 
 class ActiveTestCycleDetails(  APIView):
-    """ 
+    """ ta
         This api can be called by mobile app.
         when this api is called, the Plan, Assignment tasks should be done.
     """
@@ -162,7 +164,8 @@ class ActiveTestCaseDetails(  APIView):
         serializer = TestStepSerializer(instance = test_steps, many = True)
         test={
             'list':serializer.data,
-            'total':ts.get_all(cycle_title,testcase_id,page_size,page_num)['total']
+            'total':ts.get_all(cycle_title,testcase_id,page_size,page_num)['total'],
+            'status':ts.get_all(cycle_title,testcase_id,page_size,page_num)['status']
         }
         return Response(test, headers = resp_headers)
 
@@ -339,19 +342,39 @@ class Users(APIView):
 class TestCaseResult(APIView):
     """ Get Test Case Result, inside sync dag pull data from here"""
     def get(self, request):
-        interval = datetime.now() - timedelta(hours=24*7)
+        interval = datetime.now() - timedelta(hours=1000)
         flows = Flow.objects.raw("""
-            SELECT id,group_id,task_id,assignee, 
-                GROUP_CONCAT(result) as step_results, 
-                MAX(step_id) as max_step_id 
+            SELECT id,group_id,task_id,assignee,GROUP_CONCAT(result) as step_results 
             from evm_bff_flow 
             where task_id in 
                 (SELECT distinct task_id from evm_bff_flow where create_at > '{}' ) 
             GROUP BY task_id;""".format(interval))
         for flow in flows:
-            flow.test_case_result = 'running'
             if 'fail' in flow.step_results:
                 flow.test_case_result = 'fail'
-            elif '99' in str(flow.max_step_id):
-                flow.test_case_result = 'complete'
+            elif 'WIP' in flow.step_results:
+                flow.test_case_result = 'WIP'
+            else:
+                flow.test_case_result = 'success'    
+            # print(flow.test_case_result)
         return Response({'code':0,'errmsg':'','data': [i.to_json() for i in flows]}, headers=resp_headers)
+
+class Indexview(APIView):
+    def post(self, request):
+        page_num = request.data.get('index')
+        page_size = request.data.get('page_size')
+        assignee = request.data.get("assignee")
+        password = request.data.get("token")
+        tc = TestCycle()
+        data = tc.build_statistics(assignee, password, page_num if page_num else 0,
+                                    page_size if page_size else 3)
+        print(data)
+        return Response({'code':200,'errmsg':'','data':data})
+
+
+
+
+
+
+
+
