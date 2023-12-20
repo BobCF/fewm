@@ -9,7 +9,7 @@ class Flow(models.Model):
     result = models.CharField(max_length=64)
     assignee=models.CharField(max_length=128, null=True)
     start_time=models.DateTimeField(default=None, null=True)
-    works_time=models.IntegerField()
+    works_time=models.IntegerField(default=0)
     end_time=models.DateTimeField(default=None, null = True)
     pause_time=models.DateTimeField(default=None, null = True)
     create_at=models.DateTimeField(auto_now_add=True)
