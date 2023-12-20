@@ -11,7 +11,7 @@ from evm_bff.api.camunda_v2 import CamundaApi
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
 # 加载 Django 项目配置
 django.setup()
-from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow
+from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow,Usersrigra
 from evm_bff.api.ewm_workflow import EwmWorkFlow, uiapi
 from rest_framework import serializers
 from rest_framework import serializers
