@@ -165,7 +165,9 @@ class ActiveTestCaseDetails(  APIView):
         test={
             'list':serializer.data,
             'total':ts.get_all(cycle_title,testcase_id,page_size,page_num)['total'],
-            'status':ts.get_all(cycle_title,testcase_id,page_size,page_num)['status']
+            'status':ts.get_all(cycle_title,testcase_id,page_size,page_num)['status'],
+            'description':ts.get_all(cycle_title,testcase_id,page_size,page_num)['description'],
+            'pre_condition':ts.get_all(cycle_title,testcase_id,page_size,page_num)['pre_condition'],
         }
         return Response(test, headers = resp_headers)
 
@@ -371,6 +373,13 @@ class Indexview(APIView):
         print(data)
         return Response({'code':200,'errmsg':'','data':data})
 
+class MyView(APIView):
+    def post(self, request):
+        assignee = request.data.get("assignee")
+        password = request.data.get("token")
+        tc = TestCycle()
+        data = tc.my_statistics(assignee,password)
+        return Response({'code':200,'errmsg':'','data':data}, headers=resp_headers)
 
 
 

@@ -1,7 +1,7 @@
 import datetime
 
 from evm_bff.api.camunda_v2 import CamundaApi
-from evm_bff.models import Task
+from evm_bff.models import Task, TaskGroup
 
 
 class EwmWorkFlow():
@@ -436,8 +436,20 @@ class uiapi():
         """
         assigneedto_me=Task.objects.filter(group_id=taskgroupid, owner=assignee).count()
         unassignee=Task.objects.filter(group_id=taskgroupid,status='Assignment').count()
-        completed=Task.objects.filter(group_id=taskgroupid,status='Complete',owner=assignee).count()
+        completed=Task.objects.filter(group_id=taskgroupid,status='Completed',owner=assignee).count()
         return assigneedto_me, unassignee,completed
+
+    def getCompleted(self):
+        monthruninggroup=TaskGroup.objects.filter(status='AssignmentCompleted',start_time__gte=self.this_month_startdaytime).count()
+        monthcompletedgroup=TaskGroup.objects.filter(status='Completed',start_time__gte=self.this_month_startdaytime).count()
+        monthruningtask=Task.objects.filter(status__in=['ReadExecutionSteps','Execution','ConfirmResult'],
+                                            start_time__gt=self.this_month_startdaytime).count()
+        monthcompletedtask=Task.objects.filter(status='Completed',start_time__gte=self.this_month_startdaytime).count()
+        runinggroup=TaskGroup.objects.filter(status='AssignmentCompleted',).count()
+        completedgroup=TaskGroup.objects.filter(status='Completed',).count()
+        runingtask=Task.objects.filter(status__in=['ReadExecutionSteps','Execution','ConfirmResult'],).count()
+        completedtask=Task.objects.filter(status='Completed',).count()
+        return monthruninggroup, monthcompletedgroup, monthruningtask, monthcompletedtask,runinggroup,completedgroup,runingtask,completedtask
 
 
     # Execution

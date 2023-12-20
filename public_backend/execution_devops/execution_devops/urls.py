@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.urls import path, include, re_path
 from evm_bff.views import ActiveTestCycleStatics, ActiveTestCaseDetails, ActiveTestCaseComplete, ActiveTestCaseStart, \
-    ActiveTestCaseReStart, ActiveTestCaseAssign, UploaddbView, Indexview
+    ActiveTestCaseReStart, ActiveTestCaseAssign, UploaddbView, Indexview, MyView
 from evm_bff.views import StaticTestCycle
 from evm_bff.views import ActiveTestCycle, ActiveTestCycleDetails, ActiveTestCycleStart, ActiveTestCycleStop, ActiveTestCaseStage
 from evm_bff.views import ActiveTestExecution
@@ -32,6 +32,7 @@ urlpatterns = [
     re_path('login/',Loginview.as_view(), name='login'),
     re_path('upload/',UploaddbView.as_view(), name='upload'),
     re_path('indexview/',Indexview.as_view()),
+    re_path('myview/',MyView.as_view()),
     re_path('active-testcycle/(?P<cycle_id>\d+)/start/$',ActiveTestCycleStart.as_view()),
     re_path('active-testcycle/statics/$',ActiveTestCycleStatics.as_view()),
     re_path('active-testcycle/(?P<cycle_id>\d+)/stop/$',ActiveTestCycleStop.as_view()),

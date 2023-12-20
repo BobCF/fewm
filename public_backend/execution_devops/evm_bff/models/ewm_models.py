@@ -3,7 +3,7 @@ import http
 import os
 import django
 from django.core.paginator import Paginator, EmptyPage
-from django.db.models import Max
+from django.db.models import Max, Sum
 
 from evm_bff.api.camunda_v2 import CamundaApi
 
@@ -11,7 +11,7 @@ from evm_bff.api.camunda_v2 import CamundaApi
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
 # 加载 Django 项目配置
 django.setup()
-from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow, Usersrigra
+from evm_bff.models.db_models import TaskGroup,Task,TaskDsc,Flow
 from evm_bff.api.ewm_workflow import EwmWorkFlow, uiapi
 from rest_framework import serializers
 from rest_framework import serializers
@@ -98,7 +98,7 @@ class TestCycle():
         result=[]
         for tg in testcycle_idss:
 
-            completesize=Task.objects.filter(group_id__in=group_ids,status='complete').count()
+            completesize=Task.objects.filter(group_id__in=group_ids,status='completed').count()
             runningsize=Task.objects.filter(group_id__in=group_ids,status__in=['Execution','ConfirmResult']).count()
             opensize=Task.objects.filter(group_id__in=group_ids,status='ReadExecutionSteps').count()
             # try:
@@ -121,7 +121,7 @@ class TestCycle():
                     'open': opensize
                 },
                 'executiondata': {
-                    'data': [600, 500, 400, 300, 200, 100, 0],
+                    'data': [600, 550, 450, 390, 300, 200, 100],
                     'date': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                 }
 
@@ -169,6 +169,30 @@ class TestCycle():
             'monthComplete': td[1],
         }
         return dict
+    def my_statistics(self,assignee, password):
+        processInsts = self.workflow.getActiveGroup(assignee, password, index=0, pagesize=9999)
+        # print(processInsts)
+        group_ids = [inst['businessKey'] for inst in processInsts]
+        ui=uiapi()
+        gc=ui.getCompleted()
+        works_time=Flow.objects.filter(assignee=assignee,step_id__gt=0,
+                                           step_id__lt=999).aggregate(Sum('works_time'))['works_time__sum']
+        monthworks_time=Flow.objects.filter(assignee=assignee,step_id__gt=0,
+                                           step_id__lt=999,start_time__gt=ui.this_month_startdaytime).aggregate(Sum('works_time'))['works_time__sum']
+        data={
+            'works_time': works_time,
+            'monthworks_time': monthworks_time,
+            'monthruninggroup':gc[0],
+            'monthcompletedgroup':gc[1],
+            'monthruningtask':gc[2],
+            'monthcompletedtask':gc[3],
+            'runinggroup':gc[4],
+            'completedgroup':gc[5],
+            'runingtask':gc[6],
+            'completedtask':gc[7]
+
+        }
+        return data
 
     def get_assignee_group(self, assignee, password,status, index=0,pagesize=3):
 
@@ -279,6 +303,7 @@ class TestCycle():
             assigntask.save()
         assigneetaskgroup=TaskGroup.objects.get(group_id=group_id)
         assigneetaskgroup.status ='AssignmentCompleted'
+        assigneetaskgroup.start_time = datetime.datetime.now()
         assigneetaskgroup.save()
 
     def kill_cycle(self,assignee, password, group_id, reason, skipCustomListeners=True, skipSubprocesses=True):
@@ -351,7 +376,7 @@ class TestCase():
         }
 
     def get_complete(self,assignee,password, group_id, index, pagesize):
-        return self.get_active_task_list(assignee, group_id, "Complete", index, pagesize)
+        return self.get_active_task_list(assignee, group_id, "Completed", index, pagesize)
 
     def get_assignement(self, assignee, password,group_id,index,pagesize):
         return self.get_active_task_list(assignee, group_id, "Assignment", index, pagesize)
@@ -359,7 +384,6 @@ class TestCase():
     def get_active_task_list(self,assignee, group_id,task_name, page_num ,page_size ):
         tg=TaskGroup.objects.get(group_id=group_id)
         tas=Task.objects.filter(group_id=group_id, owner = assignee, status = task_name)
-        print(tas)
 
         paginator=Paginator(tas,page_size)
         total_page = paginator.num_pages
@@ -389,7 +413,7 @@ class TestCase():
             "Assignment": self.get_assignement(assignee, password, group_id, index, pagesize),
             "NotRun":self.get_not_run(assignee,password, group_id,index, pagesize),
             "WIP": self.get_wip(assignee, password, group_id, index, pagesize),
-            "Complete": self.get_complete(assignee, password, group_id,index,pagesize)
+            "Completed": self.get_complete(assignee, password, group_id,index,pagesize)
         }
 
     def updateTaskStatus(self,assignee, password, group_id,task_id):
@@ -426,19 +450,21 @@ class TestCase():
                 break
         # update task table
         for task in active_tasks:
-            """ update task set assignee={assignee}, status={task_name} where group_id={group_id} and task_id={task_id}""".format(assignee=task['assignee'], task_name=task['name'],group_id=group_id, task_id=task['variables']['TestCase']['value'])
+            # """ update task set assignee={assignee}, status={task_name} where group_id={group_id} and task_id={task_id}""".format(assignee=task['assignee'], task_name=task['name'],group_id=group_id, task_id=task['variables']['TestCase']['value'])
 
             assigntask = Task.objects.get(group_id=group_id, task_id=task['variables']['TestCase']['value'])
-            assigntask.owner = task['assignee']
-            assigntask.status = task['name']
-            assigntask.save()
+            if assigntask.status !='Completed':
+                assigntask.owner = task['assignee']
+                assigntask.status = task['name']
+                assigntask.save()
         try:
-            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id='999',result='complete')
+            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id__gt='1',result__in=['complete','fail'])
         except Exception as e:
             print(e)
         else:
             task=Task.objects.get(group_id=group_id, task_id=task_id)
-            task.status =status.result
+            task.status ='Completed'
+            task.end_time=status.start_time
             task.save()
 
 
@@ -452,8 +478,18 @@ class TestCase():
         print(task_inst_id)
 
         flowitem = Flow.objects.get(task_inst_id=task_inst_id)
-        flowitem.start_time = start_time
-        flowitem.end_time = end_time
+        s=start_time[:10]+' '+start_time[11:19]
+        start1_time=datetime.datetime.strptime(s,'%Y-%m-%d %H:%M:%S')
+        start2_time=start1_time.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+        if end_time:
+            s1 = end_time[:10] + ' ' + end_time[11:19]
+            end1_time=datetime.datetime.strptime(s1,'%Y-%m-%d %H:%M:%S')
+            end2_time=end1_time.replace(tzinfo=datetime.timezone.utc).astimezone(tz=None)
+            flowitem.works_time = (end2_time - start2_time).seconds
+        else:
+            end2_time=end_time
+        flowitem.start_time = start2_time
+        flowitem.end_time = end2_time
         flowitem.result = result
         flowitem.save()
 
@@ -615,9 +651,11 @@ class TestStep():
         total_page = paginator.num_pages
         test_steps = []
         status=Task.objects.get(task_id=test_case_id).status
+        description=Task.objects.get(task_id=test_case_id).description
+        pre_condition=Task.objects.get(task_id=test_case_id).pre_condition
         for td in page_tds:
             try:
-                stepstatus=Flow.objects.get(step_id=td.step_id).result
+                stepstatus=Flow.objects.get(task_id=test_case_id,step_id=td.step_id).result
             except Exception as e:
                 stepstatus=None
             if str(td.step_id) == current_step:
@@ -647,7 +685,9 @@ class TestStep():
             dict={
                 'test_steps':test_steps,
                 'total':total_page,
-                'status':status
+                'status':status,
+                'description':description,
+                'pre_condition':pre_condition,
             }
         return dict
 

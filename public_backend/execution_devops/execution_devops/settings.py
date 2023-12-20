@@ -65,8 +65,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ORIGIN_WHITELIST = (
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://121.40.124.59:8082/',
-    'http://121.40.124.59:8000/',
+    'http://121.40.124.59:8082',
+    'http://121.40.124.59:8000',
 
 )
 CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
@@ -136,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
