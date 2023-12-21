@@ -4,8 +4,10 @@ import os
 import django
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Max, Sum
+from django.forms.models import model_to_dict
 
 from evm_bff.api.camunda_v2 import CamundaApi
+from evm_bff.api.mqtt import send_message
 
 # 设置 DJANGO_SETTINGS_MODULE 环境变量（引入settings文件）
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
@@ -321,6 +323,28 @@ class TestCycle():
         flowitem.end_time = end_time
         flowitem.save()
 
+        # send test step message to internal service
+        # send_message('topic/inside-service', json.dumps(
+        flow_json = model_to_dict(flowitem)
+        test_id = test_title = test_action = 'N/A'
+        res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
+        if res:
+            test_id = res[0]['task_id']
+            test_title = res[0]['title']
+            test_action = res[0]['action']
+        flow_json.update({
+            'test_id': test_id,
+            'test_title': test_title,
+            'test_action': test_action,
+        })
+        send_message('topic/pc', json.dumps(
+            {
+                'id': 'outside-service',
+                'name': 'outside-service',
+                'url': '/data/flow',
+                'data': flow_json,
+            }
+        ))
         
 
 class TestCycleStaticsSerializer(serializers.Serializer):
@@ -492,6 +516,29 @@ class TestCase():
         flowitem.end_time = end2_time
         flowitem.result = result
         flowitem.save()
+
+        # send test step message to internal service
+        # send_message('topic/inside-service', json.dumps(
+        flow_json = model_to_dict(flowitem)
+        test_id = test_title = test_action = 'N/A'
+        res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
+        if res:
+            test_id = res[0]['task_id']
+            test_title = res[0]['title']
+            test_action = res[0]['action']
+        flow_json.update({
+            'test_id': test_id,
+            'test_title': test_title,
+            'test_action': test_action,
+        })
+        send_message('topic/pc', json.dumps(
+            {
+                'id': 'outside-service',
+                'name': 'outside-service',
+                'url': '/data/flow',
+                'data': flow_json,
+            }
+        ))
 
     def createFlowItem(self, assignee, password, group_id, task_id):
         pass
