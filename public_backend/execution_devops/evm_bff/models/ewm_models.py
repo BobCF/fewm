@@ -458,7 +458,7 @@ class TestCase():
                 assigntask.status = task['name']
                 assigntask.save()
         try:
-            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id__gt='1',result__in=['complete','fail'])
+            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id__gt='1',result__in=['complete'])
         except Exception as e:
             print(e)
         else:
