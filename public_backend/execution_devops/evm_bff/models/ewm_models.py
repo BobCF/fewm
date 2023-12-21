@@ -174,7 +174,7 @@ class TestCycle():
         # print(processInsts)
         group_ids = [inst['businessKey'] for inst in processInsts]
         ui=uiapi()
-        gc=ui.getCompleted()
+        gc=ui.getCompleted(assignee)
         works_time=Flow.objects.filter(assignee=assignee,step_id__gt=0,
                                            step_id__lt=999).aggregate(Sum('works_time'))['works_time__sum']
         monthworks_time=Flow.objects.filter(assignee=assignee,step_id__gt=0,

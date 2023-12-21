@@ -439,16 +439,16 @@ class uiapi():
         completed=Task.objects.filter(group_id=taskgroupid,status='Completed',owner=assignee).count()
         return assigneedto_me, unassignee,completed
 
-    def getCompleted(self):
+    def getCompleted(self,assignee):
         monthruninggroup=TaskGroup.objects.filter(status='AssignmentCompleted',start_time__gte=self.this_month_startdaytime).count()
         monthcompletedgroup=TaskGroup.objects.filter(status='Completed',start_time__gte=self.this_month_startdaytime).count()
-        monthruningtask=Task.objects.filter(status__in=['ReadExecutionSteps','Execution','ConfirmResult'],
+        monthruningtask=Task.objects.filter(owner=assignee,status__in=['ReadExecutionSteps','Execution','ConfirmResult'],
                                             start_time__gt=self.this_month_startdaytime).count()
-        monthcompletedtask=Task.objects.filter(status='Completed',start_time__gte=self.this_month_startdaytime).count()
+        monthcompletedtask=Task.objects.filter(owner=assignee,status='Completed',start_time__gte=self.this_month_startdaytime).count()
         runinggroup=TaskGroup.objects.filter(status='AssignmentCompleted',).count()
         completedgroup=TaskGroup.objects.filter(status='Completed',).count()
-        runingtask=Task.objects.filter(status__in=['ReadExecutionSteps','Execution','ConfirmResult'],).count()
-        completedtask=Task.objects.filter(status='Completed',).count()
+        runingtask=Task.objects.filter(owner=assignee,status__in=['ReadExecutionSteps','Execution','ConfirmResult'],).count()
+        completedtask=Task.objects.filter(owner=assignee,status='Completed',).count()
         return monthruninggroup, monthcompletedgroup, monthruningtask, monthcompletedtask,runinggroup,completedgroup,runingtask,completedtask
 
 
