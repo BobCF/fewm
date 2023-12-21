@@ -1,7 +1,7 @@
 import datetime
 
 from evm_bff.api.camunda_v2 import CamundaApi
-from evm_bff.models import Task, TaskGroup
+from evm_bff.models import Task, TaskGroup, Usersrigra
 
 
 class EwmWorkFlow():
@@ -403,7 +403,8 @@ class uiapi():
         self.todayzero_time = datetime.datetime(today.year, today.month, today.day)
         self.this_month_startdaytime = datetime.datetime(today.year, today.month, 1)
         delta = datetime.timedelta(days=1)
-        self.yestdaytime = self.todayzero_time - delta
+        self.yestdaytimeold = self.todayzero_time - delta
+        self.yestdaytime = self.yestdaytimeold.replace(tzinfo=datetime.timezone.utc)
 
     # Home page
     def getCompleteAccumulationByUser(self, assignee):
@@ -413,7 +414,11 @@ class uiapi():
         self.todayzero_time,status="Completed").count()
         monthComplete=Task.objects.filter(owner=assignee, start_time__gte=self.this_month_startdaytime, end_time__lte=
         self.now,status="Completed").count()
-        return yestdayComplete, monthComplete
+        result={
+            'yestdayComplete':yestdayComplete,
+            'monthComplete':monthComplete
+        }
+        return result
     def getNewAssignment(self,taskgroupid, assignee,start):
         """
         1. call camunda api historic_task with parameter
@@ -437,7 +442,12 @@ class uiapi():
         assigneedto_me=Task.objects.filter(group_id=taskgroupid, owner=assignee).count()
         unassignee=Task.objects.filter(group_id=taskgroupid,status='Assignment').count()
         completed=Task.objects.filter(group_id=taskgroupid,status='Completed',owner=assignee).count()
-        return assigneedto_me, unassignee,completed
+        result={
+            'assigneedto_me':assigneedto_me,
+            'unassignee':unassignee,
+            'completed':completed
+        }
+        return result
 
     def getCompleted(self,assignee):
         monthruninggroup=TaskGroup.objects.filter(status='AssignmentCompleted',start_time__gte=self.this_month_startdaytime).count()
@@ -451,8 +461,30 @@ class uiapi():
         completedtask=Task.objects.filter(owner=assignee,status='Completed',).count()
         return monthruninggroup, monthcompletedgroup, monthruningtask, monthcompletedtask,runinggroup,completedgroup,runingtask,completedtask
 
+    def getexecutiondetails(self,tg):
+        data=[]
+        date=[]
+        begeningtime = datetime.date(tg.start_time.year, tg.start_time.month, tg.start_time.day)
+        print(begeningtime)
+        totledata = Task.objects.exclude(group_id=tg.group_id,status='Assignment').count()
+        data.append(totledata)
+        for i in range(0,14):
+            executiondata=Task.objects.filter(status='Completed',end_time__gte=begeningtime,
+                                              end_time__lte=begeningtime+datetime.timedelta(days=1)).count()
+            totledata=totledata - executiondata
+            data.append(totledata)
+            date.append(begeningtime)
+            begeningtime = begeningtime + datetime.timedelta(days=1)
+        return data, date
+
 
     # Execution
+    def getuserexcutor(self):
+        users=Usersrigra.objects.all()
+        result=[]
+        for user in users:
+            result.append(user.username)
+        return result
     def getActiveTaskGroup(self):
         """
         1. call camunda api processinstance

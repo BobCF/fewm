@@ -98,9 +98,11 @@ class TestCycle():
         # page_group=group_ids[0:len(group_ids):int(pagesize)]
         # total_page = len(group_ids)//int(pagesize)+1
         result=[]
+        tc = uiapi()
+        executor = tc.getuserexcutor()
         for tg in testcycle_idss:
-
-            completesize=Task.objects.filter(group_id__in=group_ids,status='Completed').count()
+            td=tc.getexecutiondetails(tg)
+            completesize=Task.objects.filter(group_id__in=group_ids,status='completed').count()
             runningsize=Task.objects.filter(group_id__in=group_ids,status__in=['Execution','ConfirmResult']).count()
             opensize=Task.objects.filter(group_id__in=group_ids,status='ReadExecutionSteps').count()
             # try:
@@ -123,14 +125,14 @@ class TestCycle():
                     'open': opensize
                 },
                 'executiondata': {
-                    'data': [600, 550, 450, 390, 300, 200, 100],
-                    'date': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                }
-
+                    'data': td[0],
+                    'date': td[1]
+                },
             })
         dict={
             'result':result,
-            'total':total_page
+            'total':total_page,
+            'executor': executor
         }
         return dict
 
@@ -159,16 +161,16 @@ class TestCycle():
                 "id": tgs.group_id,
                 "title": tgs.title,
                 'todayNewAssignment': tg,
-                'assigneedto_me': tug[0],
-                'unassignee': tug[1],
-                'completed': tug[2]
+                'assigneedto_me': tug['assigneedto_me'],
+                'unassignee': tug['unassignee'],
+                'completed': tug['completed']
             })
 
         dict = {
             'result': result,
             'total': total_page,
-            'yestdayComplete': td[0],
-            'monthComplete': td[1],
+            'yestdayComplete': td['yestdayComplete'],
+            'monthComplete': td['monthComplete'],
         }
         return dict
     def my_statistics(self,assignee, password):

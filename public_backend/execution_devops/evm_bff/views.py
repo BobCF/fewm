@@ -58,7 +58,8 @@ class ActiveTestCycle(APIView):
         serializer = TestCycleSerializer(instance=active_testcycles,many=True)
         active_testcycle={
             'list':serializer.data,
-            'total':tcs['total']
+            'total':tcs['total'],
+            'executor':tcs['executor']
         }
         return Response(active_testcycle, headers=resp_headers)
 
