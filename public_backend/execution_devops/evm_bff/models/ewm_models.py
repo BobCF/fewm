@@ -98,7 +98,7 @@ class TestCycle():
         result=[]
         for tg in testcycle_idss:
 
-            completesize=Task.objects.filter(group_id__in=group_ids,status='completed').count()
+            completesize=Task.objects.filter(group_id__in=group_ids,status='Completed').count()
             runningsize=Task.objects.filter(group_id__in=group_ids,status__in=['Execution','ConfirmResult']).count()
             opensize=Task.objects.filter(group_id__in=group_ids,status='ReadExecutionSteps').count()
             # try:
