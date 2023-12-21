@@ -326,16 +326,21 @@ class TestCycle():
         # send test step message to internal service
         # send_message('topic/inside-service', json.dumps(
         flow_json = model_to_dict(flowitem)
+        print(flow_json)
         test_id = test_title = test_action = 'N/A'
         res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
         if res:
-            test_id = res[0]['task_id']
-            test_title = res[0]['title']
-            test_action = res[0]['action']
+            print(res[0])
+            test_id = res[0].task_id
+            test_title = res[0].title
+            test_action = res[0].action
         flow_json.update({
             'test_id': test_id,
             'test_title': test_title,
             'test_action': test_action,
+            'start_time': str(flow_json.get('start_time', '')),
+            'end_time': str(flow_json.get('end_time', '')),
+            'create_at': str(flow_json.get('create_at', '')),
         })
         send_message('topic/pc', json.dumps(
             {
@@ -520,16 +525,21 @@ class TestCase():
         # send test step message to internal service
         # send_message('topic/inside-service', json.dumps(
         flow_json = model_to_dict(flowitem)
+        print(flow_json)
         test_id = test_title = test_action = 'N/A'
         res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
         if res:
-            test_id = res[0]['task_id']
-            test_title = res[0]['title']
-            test_action = res[0]['action']
+            print(res[0])
+            test_id = res[0].task_id
+            test_title = res[0].title
+            test_action = res[0].action
         flow_json.update({
             'test_id': test_id,
             'test_title': test_title,
             'test_action': test_action,
+            'start_time': str(flow_json.get('start_time', '')),
+            'end_time': str(flow_json.get('end_time', '')),
+            'create_at': str(flow_json.get('create_at', '')),
         })
         send_message('topic/pc', json.dumps(
             {
