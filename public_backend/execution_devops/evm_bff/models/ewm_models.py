@@ -241,12 +241,14 @@ class TestCycle():
         taskgroup.save()
 
         # send msg to user mobile
+        from datetime import datetime
+        current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         send_message('topic/user/{}'.format(assignee), json.dumps(
             {
-                'id': 'outside-service',
+                'id': current_time_str,
                 'name': 'outside-service',
-                'url': '/user/notification',
-                'data': '任务包已到达',
+                'message': '任务包已到达',
+                'time': current_time_str,
             }
         ))
         return group_inst_id
