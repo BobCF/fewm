@@ -240,6 +240,15 @@ class TestCycle():
         taskgroup.start_time = dt.datetime.now()
         taskgroup.save()
 
+        # send msg to user mobile
+        send_message('topic/user/{}'.format(assignee), json.dumps(
+            {
+                'id': 'outside-service',
+                'name': 'outside-service',
+                'url': '/user/notification',
+                'data': '任务包已到达',
+            }
+        ))
         return group_inst_id
 
     def roundrobin_assignment(self,group_id, team):
