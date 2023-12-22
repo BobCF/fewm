@@ -242,10 +242,12 @@ class TestCycle():
 
         # send msg to user mobile
         from datetime import datetime
+        import time
         current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestemp = int(time.time())
         send_message('topic/user/{}'.format(assignee), json.dumps(
             {
-                'id': current_time_str,
+                'id': timestemp,
                 'name': 'outside-service',
                 'message': '任务包已到达',
                 'time': current_time_str,
