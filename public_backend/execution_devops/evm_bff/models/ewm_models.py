@@ -237,6 +237,7 @@ class TestCycle():
 
         taskgroup = TaskGroup.objects.get(group_id=group_id)
         taskgroup.group_inst_id=group_inst_id
+        taskgroup.start_time = dt.datetime.now()
         taskgroup.save()
 
         return group_inst_id
