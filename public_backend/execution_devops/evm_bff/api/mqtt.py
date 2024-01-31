@@ -48,10 +48,6 @@ def send_message_to_asignee(asignee=[], message=""):
     general send mqtt message to topic
 '''
 def send_message(topic, message):
-    # intel proxy forward
-    message['topic'] = topic
-    topic = publish_topic
-
     client = paho_mqtt.Client()
     client.username_pw_set(user, pw)
     client.connect(broker_address, broker_port)
