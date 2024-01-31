@@ -4,10 +4,10 @@ import os
 import django
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models import Max, Sum
-from django.forms.models import model_to_dict
+from rest_framework.response import Response
 
 from evm_bff.api.camunda_v2 import CamundaApi
-from evm_bff.api.mqtt import send_message
+from evm_bff.api.mqtt import send_command_to_inside_service
 
 # 设置 DJANGO_SETTINGS_MODULE 环境变量（引入settings文件）
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
@@ -87,7 +87,6 @@ class TestCycle():
         group_ids = [inst['businessKey'] for inst in active_group_list]
         try:
             tgs= TaskGroup.objects.filter(group_id__in=group_ids,status=status)
-            print(tgs)
         except Exception as e:
             print(e)
         #     break
@@ -102,7 +101,7 @@ class TestCycle():
         executor = tc.getuserexcutor()
         for tg in testcycle_idss:
             td=tc.getexecutiondetails(tg)
-            completesize=Task.objects.filter(group_id__in=group_ids,status='completed').count()
+            completesize=Task.objects.filter(group_id__in=group_ids,status='Completed').count()
             runningsize=Task.objects.filter(group_id__in=group_ids,status__in=['Execution','ConfirmResult']).count()
             opensize=Task.objects.filter(group_id__in=group_ids,status='ReadExecutionSteps').count()
             # try:
@@ -236,23 +235,10 @@ class TestCycle():
         self.updateTaskStatus(assignee,password,group_id)
 
         taskgroup = TaskGroup.objects.get(group_id=group_id)
+        taskgroup.start_time = datetime.datetime.now()
         taskgroup.group_inst_id=group_inst_id
-        taskgroup.start_time = dt.datetime.now()
         taskgroup.save()
 
-        # send msg to user mobile
-        from datetime import datetime
-        import time
-        current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        timestemp = int(time.time())
-        send_message('topic/user/{}'.format(assignee), json.dumps(
-            {
-                'id': timestemp,
-                'name': 'outside-service',
-                'message': '任务包已到达',
-                'time': current_time_str,
-            }
-        ))
         return group_inst_id
 
     def roundrobin_assignment(self,group_id, team):
@@ -339,33 +325,6 @@ class TestCycle():
         flowitem.end_time = end_time
         flowitem.save()
 
-        # send test step message to internal service
-        # send_message('topic/inside-service', json.dumps(
-        flow_json = model_to_dict(flowitem)
-        print(flow_json)
-        test_id = test_title = test_action = 'N/A'
-        res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
-        if res:
-            print(res[0])
-            test_id = res[0].task_id
-            test_title = res[0].title
-            test_action = res[0].action
-        flow_json.update({
-            'test_id': test_id,
-            'test_title': test_title,
-            'test_action': test_action,
-            'start_time': str(flow_json.get('start_time', '')),
-            'end_time': str(flow_json.get('end_time', '')),
-            'create_at': str(flow_json.get('create_at', '')),
-        })
-        send_message('topic/pc', json.dumps(
-            {
-                'id': 'outside-service',
-                'name': 'outside-service',
-                'url': '/data/flow',
-                'data': flow_json,
-            }
-        ))
         
 
 class TestCycleStaticsSerializer(serializers.Serializer):
@@ -444,7 +403,8 @@ class TestCase():
                 'status':ta.status,
                 'owner':ta.owner,
                 'owner_team':tg.team,
-                'tcd_id':ta.dsc_id
+                'tcd_id':ta.dsc_id,
+                'running':ta.running
             })
         dict={
             'result':result,
@@ -461,7 +421,7 @@ class TestCase():
             "Completed": self.get_complete(assignee, password, group_id,index,pagesize)
         }
 
-    def updateTaskStatus(self,assignee, password, group_id,task_id):
+    def updateTaskStatus(self,assignee, password, group_id,task_id,taskinstid):
         active_tasks = self.workflow.getActiveTaskListByGroupId(assignee, password, group_id,1, 9999)
         for task in active_tasks:
             if task['variables']['TestCase']['value'] == task_id:
@@ -503,7 +463,7 @@ class TestCase():
                 assigntask.status = task['name']
                 assigntask.save()
         try:
-            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id__gt='1',result__in=['complete'])
+            status=Flow.objects.get(group_id=group_id, task_id=task_id,step_id__gt='1',task_inst_id=taskinstid,result__in=['complete'])
         except Exception as e:
             print(e)
         else:
@@ -538,33 +498,6 @@ class TestCase():
         flowitem.result = result
         flowitem.save()
 
-        # send test step message to internal service
-        # send_message('topic/inside-service', json.dumps(
-        flow_json = model_to_dict(flowitem)
-        print(flow_json)
-        test_id = test_title = test_action = 'N/A'
-        res = TaskDsc.objects.filter(task_id=flow_json['task_id'], step_id=flow_json['step_id'])        
-        if res:
-            print(res[0])
-            test_id = res[0].task_id
-            test_title = res[0].title
-            test_action = res[0].action
-        flow_json.update({
-            'test_id': test_id,
-            'test_title': test_title,
-            'test_action': test_action,
-            'start_time': str(flow_json.get('start_time', '')),
-            'end_time': str(flow_json.get('end_time', '')),
-            'create_at': str(flow_json.get('create_at', '')),
-        })
-        send_message('topic/pc', json.dumps(
-            {
-                'id': 'outside-service',
-                'name': 'outside-service',
-                'url': '/data/flow',
-                'data': flow_json,
-            }
-        ))
 
     def createFlowItem(self, assignee, password, group_id, task_id):
         pass
@@ -577,9 +510,9 @@ class TestCase():
             self.updateCompleteFlowItem(assignee, password, completed_task['id']) #,completed_task['variables']['result']['value'])
             self.createFlowItem(assignee, password, group_id, task_id)
             
-            self.updateTaskStatus(assignee,password,group_id,task_id)
+            self.updateTaskStatus(assignee,password,group_id,task_id,taskinstid=None)
 
-    def CompleteExecution(self,assignee, password,group_id,task_id, result):
+    def CompleteExecution(self,assignee, password,group_id,task_id, result,task_step_id):
 
         if result == "pass":
             completed_task = self.workflow.stepPass(assignee, password,group_id,task_id)
@@ -591,23 +524,41 @@ class TestCase():
             ignored_tasks = self.workflow.ignoreLeftTasks(assignee, password, group_id, task_id)
         elif result == "ignore":
             completed_task = self.workflow.stepIgnore(assignee, password,group_id,task_id)
-
+        elif result == "execution":
+            data={
+                "user": assignee,
+                "test_cycle_id": group_id,
+                "test_case_id": task_id,
+                "test_step_id": task_step_id,
+            }
+            send_command_to_inside_service(data)
+            T=Task.objects.get(task_id=task_id)
+            if T.running:
+                return  Response({"message":"Task already running"}, status=103)
+            T.running=True
+            T.save()
+            completed_task = False
         if completed_task:
             self.updateCompleteFlowItem(assignee, password, completed_task['id'],result) #,completed_task['variables']['result']['value'])
             self.createFlowItem(assignee, password, group_id, task_id)
 
-            self.updateTaskStatus(assignee,password,group_id,task_id)
+            self.updateTaskStatus(assignee,password,group_id,task_id,taskinstid=None)
         
 
-    def Complete(self,assignee, password, group_id, task_id, restart=False):
+    def Complete(self,assignee, password, group_id, task_id, restart):
 
-        completed_task = self.workflow.completeConfirmResult(assignee, password, group_id, task_id,restart=False)
+        completed_task = self.workflow.completeConfirmResult(assignee, password, group_id, task_id,restart)
+        # print(completed_task)
 
         if completed_task:
             self.updateCompleteFlowItem(assignee, password, completed_task['id']) #,completed_task['variables']['result']['value'])
             self.createFlowItem(assignee, password, group_id, task_id)
+            if restart:
+                taskinstid=None
+            else:
+                taskinstid=completed_task['id']
 
-            self.updateTaskStatus(assignee,password,group_id,task_id)
+            self.updateTaskStatus(assignee,password,group_id,task_id,taskinstid=taskinstid)
 
 
     def getTestStepsArray(self,testcase_id):
@@ -651,6 +602,7 @@ class TestCaseSerializer(serializers.Serializer):
     owner = serializers.CharField()
     owner_team = serializers.CharField()
     tcd_id = serializers.IntegerField()
+    running = serializers.BooleanField()
 
 class TestResultSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -697,23 +649,20 @@ class TestStep():
     def __init__(self):
         # self.hsdes = HsdEsApi()
         self.camunda = CamundaApi()
-    def get_all(self,cycle_title, test_case_id,page_size,page_num):
+        self.workflow=EwmWorkFlow()
+    def get_all(self,assignee,password,group_id, test_case_id,page_size,page_num):
         # status_code, testcase = self.hsdes.getArticle(test_case_id)
         # tcd_id = testcase['data'][0]['parent_id']
         ta=Task.objects.get(task_id=test_case_id)
         tcd_id=ta.dsc_id
+        active_tasks = self.workflow.getActiveTaskListByGroupId(assignee, password, group_id,1, 9999)
+        task_execution_id=None
+        for task in active_tasks:
+            if task['variables']['TestCase']['value'] == test_case_id:
+                task_execution_id = task['executionId']
+
         # current_step = self.current_step(cycle_title,test_case_id)
-        current_step = Flow.objects.filter(task_id=test_case_id).aggregate(Max('step_id'))['step_id__max']
-        print(current_step)
-        # status_code, tcd = self.hsdes.getArticle(tcd_id)
-        # test_steps = json.loads(tcd['data'][0]['test_case_definition.test_steps'])
-        # print(test_steps)
-        # for index, step in enumerate(test_steps):
-        #     if str(index) == current_step:
-        #         step['active'] = True
-        #     else:
-        #         step['active'] = False
-        #     step['id'] = index
+        current_step = Flow.objects.filter(task_id=test_case_id,execution_id=task_execution_id).aggregate(Max('step_id'))['step_id__max']
         tds = TaskDsc.objects.filter(dsc_id=tcd_id)
         paginator = Paginator(tds, page_size)
         # 获取每页商品数据
@@ -728,7 +677,7 @@ class TestStep():
         pre_condition=Task.objects.get(task_id=test_case_id).pre_condition
         for td in page_tds:
             try:
-                stepstatus=Flow.objects.get(task_id=test_case_id,step_id=td.step_id).result
+                stepstatus=Flow.objects.get(task_id=test_case_id,step_id=td.step_id,execution_id=task_execution_id).result
             except Exception as e:
                 stepstatus=None
             if str(td.step_id) == current_step:

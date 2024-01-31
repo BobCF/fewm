@@ -4,7 +4,7 @@ from re import match
 from datetime import datetime, timedelta
 
 from django import http
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.views import View
 # from rest_framework.generics import   APIView
 from rest_framework.pagination import PageNumberPagination
@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from evm_bff.models import Usersrigra
+from evm_bff.models import Usersrigra, Task
 from evm_bff.models import Flow, Attachement
 
 # Create your views here.
@@ -54,7 +54,6 @@ class ActiveTestCycle(APIView):
         tc = TestCycle()
         tcs = tc.get_assignee_group(assignee, password,status, page_num if page_num else 0,page_size if page_size else 3)
         active_testcycles = tcs['result']
-        print(active_testcycles)
         serializer = TestCycleSerializer(instance=active_testcycles,many=True)
         active_testcycle={
             'list':serializer.data,
@@ -157,18 +156,22 @@ class ActiveTestCaseDetails(  APIView):
   
 
     def post(self,request,testcase_id):
+        username=request.data['assignee']
+        password=request.data['token']
         page_size=request.data['page_size']
         page_num=request.data.get('index')
+        group_id=request.data.get('cycle_id')
         ts = TestStep()
-        cycle_title = request.data.get("cycle_title")
-        test_steps = ts.get_all(cycle_title,testcase_id,page_size,page_num)['test_steps']
+        test_steps = ts.get_all(username,password,group_id,testcase_id,page_size,page_num)['test_steps']
+        ta=Task.objects.get(task_id=testcase_id)
         serializer = TestStepSerializer(instance = test_steps, many = True)
         test={
             'list':serializer.data,
-            'total':ts.get_all(cycle_title,testcase_id,page_size,page_num)['total'],
-            'status':ts.get_all(cycle_title,testcase_id,page_size,page_num)['status'],
-            'description':ts.get_all(cycle_title,testcase_id,page_size,page_num)['description'],
-            'pre_condition':ts.get_all(cycle_title,testcase_id,page_size,page_num)['pre_condition'],
+            'total':ts.get_all(username,password,group_id,testcase_id,page_size,page_num)['total'],
+            'status':ts.get_all(username,password,group_id,testcase_id,page_size,page_num)['status'],
+            'description':ts.get_all(username,password,group_id,testcase_id,page_size,page_num)['description'],
+            'pre_condition':ts.get_all(username,password,group_id,testcase_id,page_size,page_num)['pre_condition'],
+            'running':ta.running
         }
         return Response(test, headers = resp_headers)
 
@@ -180,10 +183,6 @@ class ActiveTestCaseStart(  APIView):
         tc = TestCase()
         assignee = request.data.get("assignee")
         password = request.data.get("token")
-        print(cycle_id)
-        print(testcase_id)
-        print(assignee)
-        print(password)
         tc.CompleteReadExecutionStep(assignee, password,cycle_id, testcase_id)
 
         return Response({"name":"start testcase"}, headers=resp_headers)
@@ -196,7 +195,7 @@ class ActiveTestCaseReStart(  APIView):
         tc = TestCase()
         assignee = request.data.get("assignee")
         password = request.data.get("token")
-        tc.Complete(assignee, password,cycle_id, testcase_id,True)
+        tc.Complete(assignee, password,cycle_id, testcase_id,restart=True)
         return Response({"name":"test case restart"}, headers=resp_headers)
 class ActiveTestCaseComplete(APIView):
     """ Complete ConfirmResult task from Camunda"""
@@ -206,7 +205,7 @@ class ActiveTestCaseComplete(APIView):
         tc = TestCase()
         assignee = request.data.get("assignee")
         password = request.data.get("token")
-        tc.Complete(assignee, password,cycle_id, testcase_id)
+        tc.Complete(assignee, password,cycle_id, testcase_id,restart=False)
         return Response({"name":"testcase complete"}, headers=resp_headers)
 
 class ActiveTestCaseAssign(  APIView):
@@ -238,13 +237,15 @@ class ActiveTestExecution(APIView):
         assignee = request.data.get("assignee")
         password = request.data.get("token")
         result = request.data.get("result")
-        tc.CompleteExecution(assignee, password,cycle_id,testcase_id,result)
+        task_step_id = request.data.get("task_step_id")
+        tc.CompleteExecution(assignee, password,cycle_id,testcase_id,result,task_step_id)
         return Response({"name":"test step complete"}, headers=resp_headers)
 
 class Loginview(APIView):
     def post(self,request):
         username=request.data.get('username')
         password=request.data.get('password')
+        print(username,password)
         if not all([username,password]):
                 return http.HttpResponseForbidden('缺少必传参数')
         if not re.match(r'^[a-zA-Z0-9_-]{1,20}$', username):
@@ -266,9 +267,20 @@ class Loginview(APIView):
             print(user.password)
             return Response({'code':100,'errmsg':'密码错误'})
         login(request,user)
-        request.session.set_expiry(None)
+
         role=user.role
-        return Response({'code':0,'errmsg':'ok','role':role},headers=resp_headers)
+        response= Response({'code':0,'errmsg':'ok','role':role},headers=resp_headers)
+        response.set_cookie('username',username,max_age=3600*24*14,samesite=None)
+        request.session.set_expiry(0)
+
+        return response
+
+# class Logoutview(APIView):
+#     def post(self, request):
+#         logout(request)
+#         response=http.JsonResponse({"code":200,"errmsg":"OK"})
+#         response.delete_cookie('username')
+#         return response
 
 # class Usercenter(APIView):
 #     def get(self,request):
@@ -277,20 +289,12 @@ class UploaddbView(APIView):
 
     def post(self,request):
         taskdata=request.data.pop('tasklist')
-        print(taskdata)
         groupdata=request.data
-        print(groupdata)
         groupdata['group_id']=groupdata.pop('id')
         groupdata['assignee']=groupdata.pop('owner')
         groupdata['configuration']=str(groupdata['configuration'])
-        print(groupdata)
         Groupserializer=TaskGroupSerializerupload(data=groupdata)
         Groupserializer.is_valid(raise_exception=True)
-        print(Groupserializer.validated_data)
-        # 如果校验失败，获取校验失败的错误原因
-        print(Groupserializer.errors)
-        # if Groupserializer.errors is None:
-        # return Response({'code':400,'errmsg':Groupserializer.errors},status=400)
         Groupserializer.save()
         # 如果校验成功，获取校验之后的数据
         for task in taskdata:
@@ -298,12 +302,8 @@ class UploaddbView(APIView):
             task['task_id']=task.pop('id')
             task['task_title']=task.pop('title')
             steps=task.pop('steps')
-            print(task)
             taskserializer = TaskSerializer(data=task)
             taskserializer.is_valid(raise_exception=True)
-            print(taskserializer.errors)
-            # if taskserializer.errors :
-            #     return Response({'code':100,'errors':taskserializer.errors}, status=100)
             taskserializer.save()
             step_id=1
             for item in steps:
@@ -312,20 +312,9 @@ class UploaddbView(APIView):
                 item['dsc_id']=task['dsc_id']
                 item['title']=task['task_title']
                 item['expection']=item.pop('expected_results')
-                print(item)
                 taskdscserializer = TaskDscSerializer(data=item)
                 taskdscserializer.is_valid()
-                print(taskdscserializer.errors)
                 taskdscserializer.save()
-                # item['group_id']=groupdata['group_id']
-                # item['assignee']=groupdata['assignee']
-                # del item['action']
-                # del item['expection']
-                # del item['notes']
-                # flowserializer = FlowSerializer(data=item)
-                # flowserializer.is_valid()
-                # print(flowserializer.errors)
-                # flowserializer.save()
                 step_id+=1
 
         return Response({'code':200,'errmsg':'数据已保存'})
@@ -371,11 +360,10 @@ class Indexview(APIView):
         tc = TestCycle()
         data = tc.build_statistics(assignee, password, page_num if page_num else 0,
                                     page_size if page_size else 3)
-        print(data)
         return Response({'code':200,'errmsg':'','data':data})
 
 class MyView(APIView):
-    def post(self, request):
+    def get(self, request):
         assignee = request.data.get("assignee")
         password = request.data.get("token")
         tc = TestCycle()

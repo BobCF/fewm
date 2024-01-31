@@ -472,7 +472,7 @@ class uiapi():
             executiondata=Task.objects.filter(status='Completed',end_time__gte=begeningtime,
                                               end_time__lte=begeningtime+datetime.timedelta(days=1)).count()
             totledata=totledata - executiondata
-            if begeningtime<=datetime.date.now():
+            if begeningtime <= datetime.date.today():
                 data.append(totledata)
             date.append(begeningtime)
             begeningtime = begeningtime + datetime.timedelta(days=1)

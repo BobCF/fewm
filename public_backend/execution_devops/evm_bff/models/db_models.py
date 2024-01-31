@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import BooleanField
+
 
 class Flow(models.Model):
     group_id = models.CharField(max_length=64)
@@ -9,7 +11,7 @@ class Flow(models.Model):
     result = models.CharField(max_length=64)
     assignee=models.CharField(max_length=128, null=True)
     start_time=models.DateTimeField(default=None, null=True)
-    works_time=models.IntegerField(default=0)
+    works_time=models.IntegerField()
     end_time=models.DateTimeField(default=None, null = True)
     pause_time=models.DateTimeField(default=None, null = True)
     create_at=models.DateTimeField(auto_now_add=True)
@@ -69,6 +71,7 @@ class Task(models.Model):
     pre_condition=models.TextField()
     configuration=models.TextField()
     comments=models.TextField()
+    running=BooleanField(default=False)
 
 class TaskDsc(models.Model):
     # id=models.IntegerField(primary_key=True,auto_created=True)
@@ -99,7 +102,8 @@ class Configuration(models.Model):
 class Usersrigra(AbstractUser):
     role=models.CharField(max_length=128)
     group=models.CharField(max_length=200)
-    class Meta:
+    class Meta(AbstractUser.Meta):
+        swappable = 'AUTH_USER_MODEL'
         db_table = 'tb_users'
         verbose_name = '用户'
         verbose_name_plural = verbose_name

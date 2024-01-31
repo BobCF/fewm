@@ -1,4 +1,6 @@
 # pip install paho-mqtt
+import uuid
+
 import paho.mqtt.client as paho_mqtt
 import json
 import threading
@@ -69,7 +71,12 @@ def command_result_handler(payload):
     print(f"Received message: {payload}")
     print("send message to mobile user")
     payload = payload['data']
-    send_message('topic/mobile/user/{user}'.format(payload['user']), 
+    test_case_id = payload['test_case_id']
+    from evm_bff.models import Task
+    T=Task.objects.get(task_id=test_case_id)
+    T.running=False
+    T.save()
+    send_message('topic/mobile/user/{user}'.format(payload['user']),
         {
             'id': str(uuid.uuid1()),
             'name':'outside-service',
