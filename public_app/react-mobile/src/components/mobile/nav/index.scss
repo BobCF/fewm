@@ -1,0 +1,30 @@
+.nav-top {
+    flex: 0;
+    border-bottom: solid 1px rgba(0, 0, 0, 0.11);
+    // background-color: #1677ff;
+    background: rgb(237, 237, 237);
+    // background: linear-gradient(to right, #1677ff 0 30%, #16e8ff 90%);
+    color: #000;
+    // box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
+}
+
+.nav-top .adm-nav-bar {
+    height: auto;
+}
+
+.nav-top .nav-outer .nav-big-title {
+    font-size: 16px;
+    font-weight: bolder;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.nav-top .nav-outer .nav-small-title {
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.nav-outer {
+    padding: 10px 0;
+}

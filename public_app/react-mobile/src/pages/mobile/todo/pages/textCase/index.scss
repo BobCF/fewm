@@ -1,0 +1,156 @@
+.tcase-body-inner {
+    padding: 8px;
+}
+
+.tcase-body-tab {
+    position: sticky;
+    top: 0px;
+    left: 0px;
+    transform: translateY(-1px);
+
+    &-bottom {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.14);
+        // box-shadow: 0 0px 0px -1px rgba(0, 0, 0, 0.2), 0 0px 0px 0 rgba(0, 0, 0, 0.14), 0 1px 1px 0 rgba(0, 0, 0, 0.12);
+        background-color: #ffffff;
+
+        &-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 2px 5px;
+        }
+    }
+
+    .adm-tabs-tab-wrapper {
+        .adm-tabs-tab {
+            font-size: 15px;
+        }
+    }
+}
+.tcase-body-inner-item {
+    box-shadow: #1677ff 0px 3px 1px -2px, rgba(0, 0, 0, 0.14) 0px 2px 2px 0px, #1677ff 0px 1px 5px 0px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+}
+
+.tcase-body-inner-item .top {
+    padding: 5px;
+}
+
+.tcase-body-inner-item .top .id {
+    color: #1677ff;
+    font-size: 14px;
+    padding: 5px;
+    border-bottom: 1px dashed #1677ff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    span {
+        font-size: 20px;
+    }
+
+    .icon {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #1677ff;
+        animation: rotate 5s linear infinite;
+        -webkit-animation: rotate 5s linear infinite;
+        .icon-ant{
+            font-size: 20px;
+        }
+
+        &.red {
+            background-color: #ff3141;
+        }
+
+        &.green {
+            background-color: #00b578;
+        }
+    }
+}
+
+
+.tcase-body-inner-item .top .title {
+    font-size: 14px;
+    padding: 5px;
+    word-break: break-all;
+    font-weight: bolder;
+    border-bottom: 1px dashed #1677ff;
+}
+
+.tcase-body-inner-item .bottom {
+    padding: 5px;
+    padding-top: 0;
+}
+
+.tcase-body-inner-item .bottom .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    margin-top: 5px;
+
+    .left {
+        width: 80px;
+    }
+
+    .right {
+        word-break: break-all;
+        flex: 1;
+    }
+}
+
+.tcase-body-inner-item .bottom .item:nth-child(2n-1) {
+    color: #000;
+}
+
+// 动画效果
+@keyframes rotate {
+    0% {
+        transform: rotate(0);
+    }
+
+    25% {
+        transform: rotate(90deg);
+    }
+
+    50% {
+        transform: rotate(180deg);
+    }
+
+    75% {
+        transform: rotate(270deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@-webkit-keyframes rotate {
+    0% {
+        transform: rotate(0);
+    }
+
+    25% {
+        transform: rotate(90deg);
+    }
+
+    50% {
+        transform: rotate(180deg);
+    }
+
+    75% {
+        transform: rotate(270deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

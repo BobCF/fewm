@@ -1,0 +1,25 @@
+.echarts_inner {
+    padding: 0 10px;
+    height: auto;
+    .main {
+        width: calc(100vw - 40px - 40px - 5px - 330px);
+        height: calc(100vw - 40px - 40px - 5px - 400px);
+        margin: 0;
+        transform-origin: 50% 0;
+        transform: scale(1);
+    }
+}
+
+// 竖屏
+@media screen and (orientation:portrait) {
+    .echarts_inner {
+        height: 240px;
+        .main {
+            width: 100px;
+            height: 83px;
+            margin: 0 auto;
+            transform-origin: 50% 0;
+            transform: scale(3);
+        }
+    }
+}

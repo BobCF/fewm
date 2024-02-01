@@ -1,0 +1,102 @@
+.up-image {
+    display: flex;
+    align-items: center;
+
+    &-icon {
+        width: 60px;
+        flex: 1;
+    }
+
+    &-list {
+        width: calc(100vw - 20px - 10px - 40px - 60px - 60px);
+        overflow-y: scroll;
+
+        .adm-image-uploader {
+            --gap: none;
+
+            .adm-image-uploader-space {
+                flex-wrap: nowrap;
+
+                .adm-space-item {
+                    &:nth-last-child(1) {
+                        display: none;
+                    }
+                }
+            }
+        }
+    }
+
+    .cameraModal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #fff;
+        z-index: 99999;
+
+        &_back {
+            position: absolute;
+            z-index: 9;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 50%;
+            background: rgba($color: #000000, $alpha: 0.5);
+            color: #fff;
+        }
+
+        &_pack {
+            position: absolute;
+            z-index: 9;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 5px solid #fff;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            box-shadow: #1677ff 0px 3px 1px -2px, rgba(0, 0, 0, 0.14) 0px 2px 2px 0px, #1677ff 0px 1px 5px 0px;
+            justify-content: center;
+            font-size: 17px;
+            color: #1677ff;
+            font-weight: bolder;
+            &_inner {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                box-shadow: #1677ff 0px 3px 1px -2px, rgba(0, 0, 0, 0.14) 0px 2px 2px 0px, #1677ff 0px 1px 5px 0px;
+                background: #1677ff;
+            }
+        }
+
+        #cameraVideo, #cameraCanvas {
+            width: 100vw;
+            height: 100vh;
+        }
+        #imgTag{
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 8;
+            width: 100%;
+        }
+        .img_recare{
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 17px;
+            background: rgba($color: #000000, $alpha: 0.5);
+            padding: 5px 8px;
+            z-index: 9;
+        }
+    }
+}
