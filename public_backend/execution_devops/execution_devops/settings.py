@@ -112,7 +112,7 @@ DATABASES = {
         'PORT': os.environ.get("DBP"),  # 数据库端口
         'USER': os.environ.get("DBU"),  # 数据库用户名
         'PASSWORD': os.environ.get('DBUP'),  # 数据库用户密码
-        'NAME': os.envion.get('DBN')  # 数据库名字
+        'NAME': os.environ.get('DBN')  # 数据库名字
     }
 }
 
