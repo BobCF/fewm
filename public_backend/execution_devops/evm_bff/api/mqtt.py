@@ -4,6 +4,7 @@ import uuid
 import paho.mqtt.client as paho_mqtt
 import json
 import threading
+import traceback
 
 # MQTT broker
 # aliyun rabbitmq prod
@@ -76,7 +77,7 @@ def command_result_handler(payload):
     T=Task.objects.get(task_id=test_case_id)
     T.running=False
     T.save()
-    send_message('topic/mobile/user/{user}'.format(payload['user']),
+    send_message('topic/mobile/user/{}'.format(payload['user']),
         {
             'id': str(uuid.uuid1()),
             'name':'outside-service',
@@ -110,6 +111,7 @@ def outside_service_receive_message():
         except Exception as e:
             print("[error] parse mqtt message: {} {} {}".format(client, userdata, msg))
             print(e)
+            traceback.print_exc()
     client.on_message = on_message
     client.subscribe("topic/outside-service", qos=2)
 
