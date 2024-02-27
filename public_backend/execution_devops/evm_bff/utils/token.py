@@ -34,12 +34,14 @@ def token_required(func):
             # check token
             request = args[1]
             token = request.headers.get('Authentication', None)
-            print(token)
+            # print(token)
             payload = jwt_decode_token(token)
         except Exception:   
             traceback.print_exc() 
             return Response(status=403, data={'code': 100,'errmsg':'token invalid !',}, headers=resp_headers)
         user_name = payload.get('user_name')
+        # add username in request
+        request.username = user_name
         exp = payload.get('exp')
         now = time.time()
         # token expire or not
