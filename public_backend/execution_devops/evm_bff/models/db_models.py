@@ -118,3 +118,17 @@ class new(models.Model):
     role=models.CharField(max_length=128)
     date_joined=models.DateTimeField(auto_now_add=True)
     group=models.CharField(max_length=64)
+
+
+class User(AbstractUser):
+    role=models.CharField(max_length=128)
+    group=models.CharField(max_length=200)
+    
+    class Meta(AbstractUser.Meta):
+        swappable = 'AUTH_USER_MODEL'
+        db_table = 'tb_users'
+        verbose_name = 'user'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.username

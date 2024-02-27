@@ -17,23 +17,6 @@ pw = "password"
 subscribe_topic = "topic/outside-serivce"
 
 '''
-    send mqtt message to inside-service of command
-'''
-def send_command_to_inside_service(data):
-    send_message('topic/inside-service', {
-            'id': str(uuid.uuid1()),
-            'name':'outside-service',
-            'url':'/instructions/command',
-            # 'data': {
-            #     "user": "1",
-            #     "test_cycle_id": "1",
-            #     "test_case_id": "1",
-            #     "test_step_id": "1",
-            # }
-            'data': data,
-        })
-
-'''
     send mqtt message to asignee when task assigned
 '''
 def send_message_to_asignee(asignee=[], message=""):
@@ -68,30 +51,32 @@ def send_message(topic, message):
 def default_handler(payload):
     print(f"Received message: {payload}")
 
-def command_result_handler(payload):
+"""
+sync tasks Table data from intel into aliyun
+"""
+def tasks_handler(payload):
     print(f"Received message: {payload}")
-    print("send message to mobile user")
     payload = payload['data']
     test_case_id = payload['test_case_id']
+    
     from evm_bff.models import Task
     T=Task.objects.get(task_id=test_case_id)
     T.running=False
     T.save()
-    send_message('topic/mobile/user/{}'.format(payload['user']),
-        {
-            'id': str(uuid.uuid1()),
-            'name':'outside-service',
-            'url':'/notification/refresh',
-            'data': payload,
-        }
-    )
+
+"""
+sync userprofile Table data from intel into aliyun
+"""
+def userprofile_handler(payload):
+    print(f"Received message: {payload}")
 
 """
     mqtt router
 """
 mqtt_router = {
-    # /instructions
-    "/instructions/command/result": command_result_handler,
+    # /data
+    "/data/tasks": tasks_handler,
+    "/data/userprofile": userprofile_handler,
 }
 
 '''

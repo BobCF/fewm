@@ -16,35 +16,11 @@ Including another URLconf
 """
 
 from django.urls import path, include, re_path
-from evm_bff.views import ActiveTestCycleStatics, ActiveTestCaseDetails, ActiveTestCaseComplete, ActiveTestCaseStart, \
-    ActiveTestCaseReStart, ActiveTestCaseAssign, UploaddbView, Indexview, MyView
-from evm_bff.views import StaticTestCycle
-from evm_bff.views import ActiveTestCycle, ActiveTestCycleDetails, ActiveTestCycleStart, ActiveTestCycleStop, ActiveTestCaseStage
-from evm_bff.views import ActiveTestExecution
-from evm_bff.views import TestCaseResult
-from evm_bff.views import Users
-
-from evm_bff.views import Loginview
+from evm_bff.views import *
 
 urlpatterns = [
-    path('api/active-testcycle/',ActiveTestCycle.as_view(), name='active-testcycle'),
-    path('api/testcycle/',StaticTestCycle.as_view(), name='testcycle-hsdes'),
-    re_path('api/login/',Loginview.as_view(), name='login'),
-    re_path('api/upload/',UploaddbView.as_view(), name='upload'),
-    re_path('api/indexview/',Indexview.as_view()),
-    re_path('api/myview/',MyView.as_view()),
-    re_path('api/active-testcycle/(?P<cycle_id>\d+)/start/$',ActiveTestCycleStart.as_view()),
-    re_path('api/active-testcycle/statics/$',ActiveTestCycleStatics.as_view()),
-    re_path('api/active-testcycle/(?P<cycle_id>\d+)/stop/$',ActiveTestCycleStop.as_view()),
-    re_path('api/active-testcycle/(?P<cycle_id>\d+)/$',ActiveTestCycleDetails.as_view()),
-    re_path('api/active-testcycle/(?P<cycle_id>\d+)/assignment/$',ActiveTestCaseAssign.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<testcase_id>\d+)/$',ActiveTestCaseDetails.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<testcase_id>\d+)/stage/$',ActiveTestCaseStage.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/complete/$',ActiveTestCaseComplete.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/start/$',ActiveTestCaseStart.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/restart/$',ActiveTestCaseReStart.as_view(), name='active-testcase-list'),
-    re_path('api/active-testcases/(?P<cycle_id>\d+)/(?P<testcase_id>\d+)/execution/$',ActiveTestExecution.as_view(), name='active-teststep-action'),
-    re_path('api/userlogin/&',Loginview.as_view, name='login'),
-    re_path('api/users/$',Users.as_view(), name='user'),
-    re_path('api/testcase-result/',TestCaseResult.as_view(), name='testcase-result-sync'),
+    # new design api
+    re_path('api/login/',Login.as_view()),
+    re_path('api/task/',Task.as_view()),
+    re_path('api/tasks/',Tasks.as_view()),
 ]

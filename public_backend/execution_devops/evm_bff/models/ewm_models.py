@@ -7,7 +7,6 @@ from django.db.models import Max, Sum
 from rest_framework.response import Response
 
 from evm_bff.api.camunda_v2 import CamundaApi
-from evm_bff.api.mqtt import send_command_to_inside_service
 
 # 设置 DJANGO_SETTINGS_MODULE 环境变量（引入settings文件）
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'execution_devops.settings')
@@ -531,7 +530,6 @@ class TestCase():
                 "test_case_id": task_id,
                 "test_step_id": task_step_id,
             }
-            send_command_to_inside_service(data)
             T=Task.objects.get(task_id=task_id)
             if T.running:
                 return  Response({"message":"Task already running"}, status=103)
