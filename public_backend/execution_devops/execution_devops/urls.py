@@ -21,6 +21,7 @@ from evm_bff.views import *
 urlpatterns = [
     # new design api
     re_path('api/login/',LoginView.as_view()),
+    re_path('api/user/',UserProfileView.as_view()),
     re_path('api/task/',TaskView.as_view()),
     re_path('api/tasks/',TasksView.as_view()),
 ]

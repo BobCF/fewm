@@ -3,6 +3,7 @@ import re
 from re import match
 from datetime import datetime, timedelta
 import traceback
+import logging
 
 from django import http
 from django.http import HttpResponse, JsonResponse
@@ -16,7 +17,7 @@ from django.forms.models import model_to_dict
 
 from evm_bff.utils import exception
 from evm_bff.utils import token
-from evm_bff.models.db_models import User, Task, UserProfile
+from evm_bff.models.db_models import *
 
 # Create your views here.
 resp_headers = {
@@ -45,22 +46,32 @@ class LoginView(APIView):
             'data': {"token": token.jwt_encode_token(username)}}, headers=resp_headers)
         return response
 
+# query user info
+class UserProfileView(APIView):
+    
+    @exception.exception_catcher
+    @token.token_required
+    def get(self,request):
+        username = request.username
+        user = model_to_dict(UserProfile.objects.get(assignee=username))
+        return Response({'code':0,'errmsg':'','data': user}, headers=resp_headers)
+
 # CRUD for single task
 class TaskView(APIView):
 
     @exception.exception_catcher
     @token.token_required
     def get(self,request):
-        # query
-        print(request.GET.dict())
+        # query by task fields
+        logging.debug(request.GET.dict())
         task = model_to_dict(Task.objects.get(**request.GET.dict()))
         return Response({'code':0,'errmsg':'', 'data': task}, headers=resp_headers)
 
     @exception.exception_catcher
     @token.token_required
     def post(self,request):
-        # create or update, id as primary key
-        print(request.POST.dict())        
+        # create or update task, id as primary key
+        logging.debug(request.POST.dict())        
         if 'id' in request.POST:
             task, is_created = Task.objects.update_or_create(
                 id=request.POST['id'], defaults=request.POST.dict())
@@ -75,9 +86,9 @@ class TasksView(APIView):
     @exception.exception_catcher
     @token.token_required
     def get(self,request):
-        # query
+        # query by task fields
         username = request.username
-        print(request.GET.dict())
-        tasks = Task.objects.filter(**request.GET.dict())
+        logging.debug(request.GET.dict())
+        tasks = Task.objects.filter(assignee=username, **request.GET.dict())
         tasks = [model_to_dict(task) for task in tasks]
         return Response({'code':0,'errmsg':'','data': tasks}, headers=resp_headers)
