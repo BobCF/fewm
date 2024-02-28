@@ -107,14 +107,14 @@ ALLOWED_HOSTS = ["*",'127.0.0.1','fewm.intel.com','localhost','firmware-rest-eng
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',   
-        'NAME': BASE_DIR / 'db.sqlite3',
-        # 'ENGINE': 'django.db.backends.mysql',        
-        # 'HOST': os.environ.get("DBH"),  # 数据库主机
-        # 'PORT': os.environ.get("DBP"),  # 数据库端口
-        # 'USER': os.environ.get("DBU"),  # 数据库用户名
-        # 'PASSWORD': os.environ.get('DBUP'),  # 数据库用户密码
-        # 'NAME': os.environ.get('DBN')  # 数据库名字
+        # 'ENGINE': 'django.db.backends.sqlite3',   
+        # 'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',        
+        'HOST': os.environ.get("DBH"),  # 数据库主机
+        'PORT': os.environ.get("DBP"),  # 数据库端口
+        'USER': os.environ.get("DBU"),  # 数据库用户名
+        'PASSWORD': os.environ.get('DBUP'),  # 数据库用户密码
+        'NAME': os.environ.get('DBN')  # 数据库名字
     }
 }
 

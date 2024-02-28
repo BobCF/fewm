@@ -56,19 +56,23 @@ sync tasks Table data from intel into aliyun
 """
 def tasks_handler(payload):
     print(f"Received message: {payload}")
-    payload = payload['data']
-    test_case_id = payload['test_case_id']
-    
-    from evm_bff.models import Task
-    T=Task.objects.get(task_id=test_case_id)
-    T.running=False
-    T.save()
+    rows = payload['data']
+    # sync to Task table
+    from evm_bff.models.db_models import Task
+    for row in rows:
+        task, id_created = Task.objects.update_or_create(**row)
+    # sync to TaskCache table
 
 """
 sync userprofile Table data from intel into aliyun
 """
 def userprofile_handler(payload):
     print(f"Received message: {payload}")
+    rows = payload['data']
+    # sync to UserProfile table
+    from evm_bff.models.db_models import UserProfile
+    for row in rows:
+        userProfile, id_created = UserProfile.objects.update_or_create(**row)
 
 """
     mqtt router
@@ -94,8 +98,7 @@ def outside_service_receive_message():
             handler = mqtt_router.get(payload['url'], default_handler)
             handler(payload)
         except Exception as e:
-            print("[error] parse mqtt message: {} {} {}".format(client, userdata, msg))
-            print(e)
+            print("[error] parse mqtt message: {}".format(msg))
             traceback.print_exc()
     client.on_message = on_message
     client.subscribe("topic/outside-service", qos=2)
@@ -104,8 +107,6 @@ def outside_service_receive_message():
     client.loop_forever()    
     # client.disconnect()
 
-
 # test
 if __name__ == "__main__":    
     outside_service_receive_message()
-

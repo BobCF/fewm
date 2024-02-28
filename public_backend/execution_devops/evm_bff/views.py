@@ -26,6 +26,7 @@ resp_headers = {
     "Access-Control-Allow-Headers": "Content-Type"
 }
 
+# login and return token
 class LoginView(APIView):
 
     @exception.exception_catcher
