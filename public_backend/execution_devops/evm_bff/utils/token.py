@@ -33,7 +33,7 @@ def token_required(func):
         try:
             # check token
             request = args[1]
-            token = request.headers.get('Authentication', None)
+            token = request.headers.get('Authorization', None)
             payload = jwt_decode_token(token)
         except Exception:   
             traceback.print_exc() 
