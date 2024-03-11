@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import BooleanField, IntegerField, DateTimeField
+from django.db.models import BooleanField, IntegerField, DateTimeField, BigIntegerField
 
 class User(AbstractUser):
     role=models.CharField(max_length=128)
@@ -27,31 +27,31 @@ class UserProfile(models.Model):
     min_exe_time =	models.IntegerField(null=True)
 
 class TaskCache(models.Model):
-    tc_id =	models.IntegerField(null=True)
+    tc_id =	models.BigIntegerField(null=True)
     configuration_id =	models.CharField(max_length=255, null=True)
     testcycle =	models.CharField(max_length=512, null=True)
-    tcd_id =	models.IntegerField(null=True)
-    tr_id =	models.IntegerField(null=True)
+    tcd_id =	models.BigIntegerField(null=True)
+    tr_id =	models.BigIntegerField(null=True)
     priority =	models.CharField(max_length=255, null=True)
     status =	models.CharField(max_length=255, null=True)
     reason =	models.CharField(max_length=255, null=True)
     start_date =	models.DateTimeField(null=True)
     updated_date =	models.DateTimeField(null=True)
     assignee =	models.CharField(max_length=255, null=True)
-    bug_id =	models.IntegerField(null=True)
+    bug_id =	models.BigIntegerField(null=True)
     _updated_at =	models.DateTimeField(null=True)
 
 class Task(models.Model):
-    tc_id =	models.IntegerField(null=True)
+    tc_id =	models.BigIntegerField(null=True)
     configuration_id =	models.CharField(max_length=255, null=True)
     testcycle =	models.CharField(max_length=512, null=True)
-    tcd_id =	models.IntegerField(null=True)
-    tr_id =	models.IntegerField(null=True)
+    tcd_id =	models.BigIntegerField(null=True)
+    tr_id =	models.BigIntegerField(null=True)
     priority =	models.CharField(max_length=255, null=True)
     status =	models.CharField(max_length=255, null=True)
     reason =	models.CharField(max_length=255, null=True)
     start_date =	models.DateTimeField(null=True)
     updated_date =	models.DateTimeField(null=True)
     assignee =	models.CharField(max_length=255, null=True)
-    bug_id =	models.IntegerField(null=True)
+    bug_id =	models.BigIntegerField(null=True)
     _updated_at =	models.DateTimeField(null=True)
