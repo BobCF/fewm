@@ -98,9 +98,9 @@ class TasksView(APIView):
         params = request.GET.dict()
         logging.debug(params)
         if 'status' in params:
-            if params['status'] == 'complete':
+            if params['status'] == 'finished':
                 tasks = tasks.filter(status='complete')
             else:
-                tasks = Task.exclude(status='complete')
+                tasks = tasks.exclude(status='complete')
         tasks = [model_to_dict(task) for task in tasks]
         return Response({'code':0,'errmsg':'','data': tasks}, headers=resp_headers)
