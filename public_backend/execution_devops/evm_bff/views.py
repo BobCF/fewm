@@ -76,12 +76,14 @@ class TaskView(APIView):
     @token.token_required
     def post(self,request):
         # create or update task, id as primary key
-        logging.info(request.POST.dict())
-        if 'id' in request.POST:
+        # logging.info(request.POST.dict())
+        data = json.loads(request.body)
+        logging.info(data)
+        if 'id' in data:
             task, is_created = Task.objects.update_or_create(
-                id=request.POST['id'], defaults=request.POST.dict())
+                id=data['id'], defaults=data)
         else:
-            task, is_created = Task.objects.update_or_create(**request.POST.dict())
+            task, is_created = Task.objects.update_or_create(**data)
         task = model_to_dict(task)
         return Response({'code':0,'errmsg':'','data': task}, headers=resp_headers)
 
