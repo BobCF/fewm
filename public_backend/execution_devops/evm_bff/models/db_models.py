@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import BooleanField, IntegerField, DateTimeField, BigIntegerField
+from django.db.models import BooleanField, IntegerField, DateTimeField, BigIntegerField, DurationField
 
 class User(AbstractUser):
     role=models.CharField(max_length=128)
@@ -36,10 +36,15 @@ class TaskCache(models.Model):
     status =	models.CharField(max_length=255, null=True)
     reason =	models.CharField(max_length=255, null=True)
     start_date =	models.DateTimeField(null=True)
-    updated_date =	models.DateTimeField(null=True)
+    end_date =	models.DateTimeField(null=True)
+    pause_date =	models.DateTimeField(null=True)
+    pause_duration =	models.IntegerField(null=True)
     assignee =	models.CharField(max_length=255, null=True)
     bug_id =	models.BigIntegerField(null=True)
-    _updated_at =	models.DateTimeField(null=True)
+    _updated_at =	models.DateTimeField(auto_now=True)
+    image = models.CharField(max_length=255, null=True)
+    report_bug = models.CharField(max_length=255, null=True)
+    test_env = models.CharField(max_length=255, null=True)
 
 class Task(models.Model):
     tc_id =	models.BigIntegerField(null=True)
@@ -51,7 +56,12 @@ class Task(models.Model):
     status =	models.CharField(max_length=255, null=True)
     reason =	models.CharField(max_length=255, null=True)
     start_date =	models.DateTimeField(null=True)
-    updated_date =	models.DateTimeField(null=True)
+    end_date =	models.DateTimeField(null=True)
+    pause_date =	models.DateTimeField(null=True)
+    pause_duration =	models.IntegerField(null=True)
     assignee =	models.CharField(max_length=255, null=True)
     bug_id =	models.BigIntegerField(null=True)
-    _updated_at =	models.DateTimeField(null=True)
+    _updated_at =	models.DateTimeField(auto_now=True)
+    image = models.CharField(max_length=255, null=True)
+    report_bug = models.CharField(max_length=255, null=True)
+    test_env = models.CharField(max_length=255, null=True)

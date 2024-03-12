@@ -68,7 +68,7 @@ class TaskView(APIView):
     @token.token_required
     def get(self,request):
         # query by task fields
-        logging.debug(request.GET.dict())
+        logging.info(request.GET.dict())
         task = model_to_dict(Task.objects.get(**request.GET.dict()))
         return Response({'code':0,'errmsg':'', 'data': task}, headers=resp_headers)
 
@@ -76,7 +76,7 @@ class TaskView(APIView):
     @token.token_required
     def post(self,request):
         # create or update task, id as primary key
-        logging.debug(request.POST.dict())        
+        logging.info(request.POST.dict())
         if 'id' in request.POST:
             task, is_created = Task.objects.update_or_create(
                 id=request.POST['id'], defaults=request.POST.dict())
@@ -96,7 +96,7 @@ class TasksView(APIView):
         tasks = Task.objects.filter(assignee=username)
         # filter by status
         params = request.GET.dict()
-        logging.debug(params)
+        logging.info(params)
         if 'status' in params:
             if params['status'] == 'finished':
                 tasks = tasks.filter(status='complete')
